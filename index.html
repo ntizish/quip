@@ -618,41 +618,59 @@ function buildUI() {
   document.getElementById('animate').onchange  =e=>state.animate  =e.target.checked;
   document.getElementById('btnSeed').onclick   =()=>{ state.seed=Math.floor(Math.random()*999999); };
   document.getElementById('btnReset').onclick  =resetParams;
-  document.getElementById('btnSave').onclick   =()=>{
-    const a=document.createElement('a');
-    a.download=`pattern_${state.seed}.png`; a.href=canvas.toDataURL(); a.click();
+  document.getElementById('btnSave').onclick = () => {
+    const a = document.createElement('a');
+    a.download = `pattern_${state.seed}.png`;
+    a.href = canvas.toDataURL();
+    a.click();
   };
 
   // SVG export: convert current canvas pixels to SVG rects
   document.getElementById('btnSaveSvg').onclick = () => {
     const ps   = state.pixelSize;
     const sp   = state.spacing;
-    const step = ps + sp;
     const cs   = COLOR_SCHEMES[state.colorScheme];
     let rects  = '';
     const zoom = state.shapeScale;
     const gridCX = cols * ps / 2;
-    const gridCY = rows * ps / 2;
+    const gridCY = isDiamondMode() ? rows * ps / 2 - CANVAS_SIZE/4 : rows * ps / 2;
     const offX   = CANVAS_SIZE/2 - gridCX/zoom;
     const offY   = CANVAS_SIZE/2 - gridCY/zoom;
+    const circR  = CANVAS_SIZE / 2;
+
+    // Exact same inCircle logic as render (pre-zoom grid coords)
+    function svgInCircle(gx, gy) {
+      if (!state.radialSym) return true;
+      const cx = gx * ps, cy = gy * ps;
+      const dx = cx - gridCX, dy = cy - gridCY;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist > circR) return false;
+      const fadeStart = circR * 0.65;
+      if (dist > fadeStart) {
+        const tt = (dist - fadeStart) / (circR - fadeStart);
+        const keepProb = 1 - Math.pow(tt, 1.5);
+        if (noise2(cx * 0.05 + state.seed * 0.001, cy * 0.05) > keepProb) return false;
+      }
+      return true;
+    }
 
     for (let gy=0; gy<rows; gy++) {
       for (let gx=0; gx<cols; gx++) {
         if (!grid[gy*cols+gx]) continue;
+        if (!svgInCircle(gx, gy)) continue;
         const sx = offX + gx * ps / zoom;
         const sy = offY + gy * ps / zoom;
         const sw = (ps - sp) / zoom;
         const color = getPixelColor(gx, gy, sx, sy);
-        // shape
         const shape = state.mixShapes
           ? SHAPES[Math.floor(noise2(gx*0.2+state.seed*0.0001, gy*0.2)*SHAPES.length)].id
           : state.pixelShapeType;
-        if (shape === 1) { // diamond
+        if (shape === 1) {
           const hx = sw/2, hy = sw/2;
           rects += `<polygon points="${sx+hx},${sy} ${sx+sw},${sy+hy} ${sx+hx},${sy+sw} ${sx},${sy+hy}" fill="${color}"/>`;
-        } else if (shape === 2) { // circle
+        } else if (shape === 2) {
           rects += `<circle cx="${sx+sw/2}" cy="${sy+sw/2}" r="${sw/2}" fill="${color}"/>`;
-        } else if (shape === 3) { // plus
+        } else if (shape === 3) {
           const t3=sw/3;
           rects += `<rect x="${sx+t3}" y="${sy}" width="${t3}" height="${sw}" fill="${color}"/>`;
           rects += `<rect x="${sx}" y="${sy+t3}" width="${sw}" height="${t3}" fill="${color}"/>`;
@@ -661,9 +679,14 @@ function buildUI() {
         }
       }
     }
+
+    // Add SVG clipPath circle for clean edge
+    const clipId = state.radialSym ? `<defs><clipPath id="circ"><circle cx="${CANVAS_SIZE/2}" cy="${CANVAS_SIZE/2}" r="${circR}"/></clipPath></defs>` : '';
+    const clipAttr = state.radialSym ? ` clip-path="url(#circ)"` : '';
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${CANVAS_SIZE}" height="${CANVAS_SIZE}">
+${clipId}
 <rect width="${CANVAS_SIZE}" height="${CANVAS_SIZE}" fill="${cs.bg}"/>
-${rects}
+<g${clipAttr}>${rects}</g>
 </svg>`;
     const a = document.createElement('a');
     a.download = `pattern_${state.seed}.svg`;
