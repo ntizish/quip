@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flip Peek V2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&display=swap');
+
+  :root {
+    --bg: #0c0c0c;
+    --panel: rgba(18, 18, 18, 0.94);
+    --line: #2a2a2a;
+    --text: #ececec;
+    --dim: #8f8f8f;
+    --accent: #f4f4f4;
+    --canvas-bg: #efefef;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    background:
+      radial-gradient(circle at top left, rgba(255,255,255,0.06), transparent 28%),
+      linear-gradient(135deg, #111 0%, #080808 100%);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  #sidebar {
+    padding: 20px;
+    border-right: 1px solid var(--line);
+    background: var(--panel);
+    backdrop-filter: blur(10px);
+    overflow-y: auto;
+  }
+
+  .logo {
+    margin-bottom: 18px;
+    font-size: 12px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+
+  .logo span {
+    color: var(--dim);
+  }
+
+  .section {
+    padding: 14px 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .section:first-of-type {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .section-label {
+    margin-bottom: 10px;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--dim);
+    text-transform: uppercase;
+  }
+
+  .note {
+    color: var(--dim);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .upload-btn,
+  .action-btn {
+    width: 100%;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--text);
+    padding: 11px 12px;
+    font: inherit;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1.6px;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+
+  .upload-btn:hover,
+  .action-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .action-btn.primary {
+    border-color: #7a7a7a;
+  }
+
+  .action-btn.primary:hover {
+    background: var(--accent);
+    color: #000;
+  }
+
+  input[type="file"] {
+    display: none;
+  }
+
+  .control {
+    margin-bottom: 12px;
+  }
+
+  .control:last-child {
+    margin-bottom: 0;
+  }
+
+  .control-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 5px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+  }
+
+  .control-head span:first-child {
+    color: var(--dim);
+  }
+
+  input[type="range"] {
+    width: 100%;
+    appearance: none;
+    height: 2px;
+    background: var(--line);
+    border-radius: 999px;
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+
+  input[type="color"] {
+    width: 100%;
+    height: 42px;
+    border: 1px solid var(--line);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  #main {
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #stage {
+    width: min(86vw, 920px);
+    aspect-ratio: 1;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+    background: #111;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+  }
+
+  #canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    background: var(--canvas-bg);
+    cursor: crosshair;
+  }
+
+  #emptyState {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: rgba(0, 0, 0, 0.45);
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0)),
+      var(--canvas-bg);
+    pointer-events: none;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 11px;
+  }
+
+  #emptyState strong {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 36px;
+    letter-spacing: 4px;
+    color: rgba(0, 0, 0, 0.28);
+  }
+
+  @media (max-width: 860px) {
+    body {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+    }
+
+    #sidebar {
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    #main {
+      padding: 16px;
+    }
+
+    #stage {
+      width: min(100%, 720px);
+    }
+  }
+</style>
+</head>
+<body>
+  <aside id="sidebar">
+    <div class="logo">quip flip <span>// v2</span></div>
+
+    <div class="section">
+      <div class="section-label">Source</div>
+      <button class="upload-btn" id="uploadBtn">Load Image</button>
+      <input type="file" id="fileInput" accept="image/*">
+    </div>
+
+    <div class="section">
+      <div class="section-label">Reveal</div>
+      <div class="control">
+        <div class="control-head"><span>Tile Size</span><span id="tileSizeVal">24</span></div>
+        <input type="range" id="tileSize" min="10" max="64" step="2" value="24">
+      </div>
+      <div class="control">
+        <div class="control-head"><span>Radius</span><span id="radiusVal">140</span></div>
+        <input type="range" id="radius" min="40" max="260" step="5" value="140">
+      </div>
+      <div class="control">
+        <div class="control-head"><span>Softness</span><span id="softnessVal">0.28</span></div>
+        <input type="range" id="softness" min="0.05" max="0.8" step="0.01" value="0.28">
+      </div>
+      <div class="control">
+        <div class="control-head"><span>Flip Speed</span><span id="speedVal">0.18</span></div>
+        <input type="range" id="speed" min="0.04" max="0.35" step="0.01" value="0.18">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Background</div>
+      <div class="control">
+        <div class="control-head"><span>Color</span><span id="bgColorLabel">#efefef</span></div>
+        <input type="color" id="bgColor" value="#efefef">
+      </div>
+      <button class="action-btn primary" id="centerBtn">Recenter Reveal</button>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Usage</div>
+      <p class="note">Upload an image, then move the pointer over the canvas. Tiles inside the radial field flip from the plain surface to the image and relax back when the cursor leaves.</p>
+    </div>
+  </aside>
+
+  <main id="main">
+    <div id="stage">
+      <canvas id="canvas"></canvas>
+      <div id="emptyState">
+        <strong>Peek</strong>
+        <div>Load an image to begin</div>
+      </div>
+    </div>
+  </main>
+
+<script>
+const CANVAS_SIZE = 900;
+
+const state = {
+  tileSize: 24,
+  radius: 140,
+  softness: 0.28,
+  speed: 0.18,
+  bgColor: '#efefef',
+  cursorX: CANVAS_SIZE / 2,
+  cursorY: CANVAS_SIZE / 2,
+  pointerActive: false,
+};
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const dpr = window.devicePixelRatio || 1;
+
+canvas.width = CANVAS_SIZE * dpr;
+canvas.height = CANVAS_SIZE * dpr;
+ctx.scale(dpr, dpr);
+ctx.imageSmoothingEnabled = true;
+
+const fileInput = document.getElementById('fileInput');
+const emptyState = document.getElementById('emptyState');
+
+let imageBitmap = null;
+let fittedImage = null;
+let cols = 0;
+let rows = 0;
+let tiles = [];
+let lastTime = performance.now();
+
+function resizeGrid() {
+  cols = Math.ceil(CANVAS_SIZE / state.tileSize);
+  rows = Math.ceil(CANVAS_SIZE / state.tileSize);
+  const next = new Array(cols * rows);
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const idx = row * cols + col;
+      const prev = tiles[idx];
+      next[idx] = {
+        flip: prev ? prev.flip : 0,
+      };
+    }
+  }
+
+  tiles = next;
+}
+
+function fitImageToCanvas(source) {
+  if (!source) {
+    fittedImage = null;
+    return;
+  }
+
+  const scale = Math.max(CANVAS_SIZE / source.width, CANVAS_SIZE / source.height);
+  const drawWidth = source.width * scale;
+  const drawHeight = source.height * scale;
+  const dx = (CANVAS_SIZE - drawWidth) / 2;
+  const dy = (CANVAS_SIZE - drawHeight) / 2;
+
+  fittedImage = { source, dx, dy, drawWidth, drawHeight };
+}
+
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function easeFlip(value) {
+  return 0.5 - 0.5 * Math.cos(value * Math.PI);
+}
+
+function getPointerPosition(event) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = CANVAS_SIZE / rect.width;
+  const scaleY = CANVAS_SIZE / rect.height;
+  return {
+    x: (event.clientX - rect.left) * scaleX,
+    y: (event.clientY - rect.top) * scaleY,
+  };
+}
+
+function updateCursor(event) {
+  const pos = getPointerPosition(event);
+  state.cursorX = pos.x;
+  state.cursorY = pos.y;
+  state.pointerActive = true;
+}
+
+function clearCursor() {
+  state.pointerActive = false;
+}
+
+function drawBackground() {
+  ctx.fillStyle = state.bgColor;
+  ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+}
+
+function drawTileOverlay(x, y, size, intensity) {
+  const grd = ctx.createLinearGradient(x, y, x + size, y);
+  grd.addColorStop(0, `rgba(255,255,255,${0.25 * intensity})`);
+  grd.addColorStop(1, `rgba(255,255,255,${0.08 * intensity})`);
+  ctx.fillStyle = grd;
+  ctx.fillRect(x, y, size, size);
+}
+
+function drawRevealCursor() {
+  if (!state.pointerActive) return;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(state.cursorX, state.cursorY, state.radius, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(0,0,0,0.16)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 8]);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function updateTiles(dt) {
+  const speed = 1 - Math.pow(1 - state.speed, dt * 60);
+  const radius = state.radius;
+  const innerRadius = radius * (1 - state.softness);
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const idx = row * cols + col;
+      const tile = tiles[idx];
+      const x = col * state.tileSize;
+      const y = row * state.tileSize;
+      const centerX = x + state.tileSize * 0.5;
+      const centerY = y + state.tileSize * 0.5;
+
+      let target = 0;
+      if (state.pointerActive) {
+        const dx = centerX - state.cursorX;
+        const dy = centerY - state.cursorY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < radius) {
+          if (dist <= innerRadius) {
+            target = 1;
+          } else {
+            const falloff = 1 - (dist - innerRadius) / Math.max(1, radius - innerRadius);
+            target = Math.max(0, Math.min(1, falloff));
+          }
+        }
+      }
+
+      tile.flip = lerp(tile.flip, target, speed);
+    }
+  }
+}
+
+function drawTiles() {
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const idx = row * cols + col;
+      const tile = tiles[idx];
+      if (tile.flip < 0.002) continue;
+
+      const x = col * state.tileSize;
+      const y = row * state.tileSize;
+      const size = Math.min(state.tileSize, CANVAS_SIZE - x, CANVAS_SIZE - y);
+      if (size <= 0) continue;
+
+      const eased = easeFlip(tile.flip);
+      const scaleX = Math.max(0.02, Math.abs(Math.cos(eased * Math.PI)));
+      const showingImage = eased >= 0.5 && fittedImage;
+      const visibleWidth = size * scaleX;
+      const drawX = x + (size - visibleWidth) * 0.5;
+
+      if (showingImage) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(drawX, y, visibleWidth, size);
+        ctx.clip();
+        ctx.drawImage(
+          fittedImage.source,
+          fittedImage.dx,
+          fittedImage.dy,
+          fittedImage.drawWidth,
+          fittedImage.drawHeight
+        );
+        ctx.restore();
+      } else {
+        ctx.fillStyle = state.bgColor;
+        ctx.fillRect(drawX, y, visibleWidth, size);
+      }
+
+      drawTileOverlay(drawX, y, visibleWidth, tile.flip);
+    }
+  }
+}
+
+function render(now) {
+  requestAnimationFrame(render);
+  const dt = Math.min(0.05, (now - lastTime) / 1000);
+  lastTime = now;
+
+  drawBackground();
+  updateTiles(dt);
+
+  if (imageBitmap) {
+    drawTiles();
+    drawRevealCursor();
+  }
+}
+
+function wireRange(id, key, formatter = v => v) {
+  const input = document.getElementById(id);
+  const label = document.getElementById(id + 'Val');
+  label.textContent = formatter(input.value);
+  input.addEventListener('input', () => {
+    state[key] = parseFloat(input.value);
+    label.textContent = formatter(input.value);
+    if (key === 'tileSize') resizeGrid();
+  });
+}
+
+wireRange('tileSize', 'tileSize', v => String(parseInt(v, 10)));
+wireRange('radius', 'radius', v => String(parseInt(v, 10)));
+wireRange('softness', 'softness', v => Number(v).toFixed(2));
+wireRange('speed', 'speed', v => Number(v).toFixed(2));
+
+const bgColor = document.getElementById('bgColor');
+bgColor.addEventListener('input', () => {
+  state.bgColor = bgColor.value;
+  document.getElementById('bgColorLabel').textContent = bgColor.value;
+  document.documentElement.style.setProperty('--canvas-bg', bgColor.value);
+});
+
+document.getElementById('uploadBtn').addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', async (event) => {
+  const [file] = event.target.files || [];
+  if (!file) return;
+
+  const bitmap = await createImageBitmap(file);
+  imageBitmap = bitmap;
+  fitImageToCanvas(imageBitmap);
+  emptyState.style.display = 'none';
+});
+
+document.getElementById('centerBtn').addEventListener('click', () => {
+  state.cursorX = CANVAS_SIZE / 2;
+  state.cursorY = CANVAS_SIZE / 2;
+  state.pointerActive = true;
+});
+
+canvas.addEventListener('mousemove', updateCursor);
+canvas.addEventListener('mouseenter', updateCursor);
+canvas.addEventListener('mouseleave', clearCursor);
+canvas.addEventListener('touchstart', event => {
+  const touch = event.touches[0];
+  if (!touch) return;
+  updateCursor(touch);
+}, { passive: true });
+canvas.addEventListener('touchmove', event => {
+  const touch = event.touches[0];
+  if (!touch) return;
+  updateCursor(touch);
+}, { passive: true });
+canvas.addEventListener('touchend', clearCursor, { passive: true });
+
+resizeGrid();
+requestAnimationFrame(render);
+</script>
+</body>
+</html>
