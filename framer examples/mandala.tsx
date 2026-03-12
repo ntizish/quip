@@ -472,9 +472,7 @@ export default function QuipPeekExport(props: { video?: string }) {
             updatePointer(event.clientX, event.clientY)
         const onPointerEnter = (event: PointerEvent) =>
             updatePointer(event.clientX, event.clientY)
-        const onPointerLeave = () => {
-            pointerRef.current.active = false
-        }
+        const onPointerLeave = () => {}
 
         const observer = new ResizeObserver(resizeCanvas)
         observer.observe(element)
