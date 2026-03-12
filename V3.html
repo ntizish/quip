@@ -313,6 +313,10 @@
         <div class="control-head"><span>Rotate</span><span id="rotateVal">0.22</span></div>
         <input type="range" id="rotate" min="-1.2" max="1.2" step="0.01" value="0.22">
       </div>
+      <div class="control">
+        <div class="control-head"><span>Ambient</span><span id="ambientVal">0.08</span></div>
+        <input type="range" id="ambient" min="0.00" max="0.35" step="0.01" value="0.08">
+      </div>
     </div>
 
     <div class="section">
@@ -377,6 +381,7 @@ const state = {
   density: 0.58,
   pulse: 0.12,
   rotate: 0.22,
+  ambient: 0.08,
   radialRays: 6,
   p1: 0.5,
   p2: 0.5,
@@ -416,7 +421,10 @@ function resizeGrid() {
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const idx = row * cols + col;
-      next[idx] = { flip: tiles[idx] ? tiles[idx].flip : 0 };
+      next[idx] = {
+        flip: tiles[idx] ? tiles[idx].flip : 0,
+        ambient: tiles[idx] ? (tiles[idx].ambient || 0) : 0,
+      };
     }
   }
 
@@ -660,6 +668,7 @@ function drawTileOverlay(x, y, size, intensity) {
 
 function updateTiles(dt) {
   const speed = 1 - Math.pow(1 - state.speed, dt * 60);
+  const ambientChance = state.ambient * 0.9;
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const idx = row * cols + col;
@@ -673,6 +682,22 @@ function updateTiles(dt) {
       if (state.pointerActive) {
         target = getRevealStrength(centerX - state.cursorX, centerY - state.cursorY);
       }
+
+      const drift = noise2(
+        col * 0.21 + motionTime * 0.18 + 17.3,
+        row * 0.21 - motionTime * 0.14 + 91.7
+      );
+      const triggerBias = 0.35 + drift * 0.65;
+      const triggerRoll = noise2(
+        col * 1.73 + motionTime * 3.2 + 41.1,
+        row * 1.73 - motionTime * 2.7 + 12.8
+      );
+      if (triggerRoll > 0.72 && Math.random() < ambientChance * triggerBias * dt) {
+        tile.ambient = 0.55 + Math.random() * 0.45;
+      }
+
+      tile.ambient = Math.max(0, tile.ambient - dt * (0.9 + Math.random() * 1.2));
+      target = Math.max(target, tile.ambient);
 
       tile.flip = lerp(tile.flip, target, speed);
     }
@@ -1249,6 +1274,7 @@ wireRange('patternScale', 'patternScale', v => Number(v).toFixed(2));
 wireRange('density', 'density', v => Number(v).toFixed(2));
 wireRange('pulse', 'pulse', v => Number(v).toFixed(2));
 wireRange('rotate', 'rotate', v => Number(v).toFixed(2));
+wireRange('ambient', 'ambient', v => Number(v).toFixed(2));
 wireRange('radialRays', 'radialRays', v => String(parseInt(v, 10)));
 
 const bgColor = document.getElementById('bgColor');
