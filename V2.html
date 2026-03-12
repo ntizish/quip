@@ -239,6 +239,10 @@
     <div class="section">
       <div class="section-label">Reveal</div>
       <div class="control">
+        <div class="control-head"><span>Shape</span><span id="shapeLabel">Circle</span></div>
+        <input type="range" id="shapeMode" min="0" max="4" step="1" value="0">
+      </div>
+      <div class="control">
         <div class="control-head"><span>Tile Size</span><span id="tileSizeVal">24</span></div>
         <input type="range" id="tileSize" min="10" max="64" step="2" value="24">
       </div>
@@ -285,6 +289,7 @@
 const CANVAS_SIZE = 900;
 
 const state = {
+  shapeMode: 0,
   tileSize: 24,
   radius: 140,
   softness: 0.28,
@@ -313,6 +318,8 @@ let cols = 0;
 let rows = 0;
 let tiles = [];
 let lastTime = performance.now();
+let motionTime = 0;
+const SHAPES = ['Circle', 'Star', 'Spiral', 'Mandala', 'Flower'];
 
 function resizeGrid() {
   cols = Math.ceil(CANVAS_SIZE / state.tileSize);
@@ -393,19 +400,116 @@ function drawRevealCursor() {
   if (!state.pointerActive) return;
 
   ctx.save();
-  ctx.beginPath();
-  ctx.arc(state.cursorX, state.cursorY, state.radius, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(0,0,0,0.16)';
+  const path = new Path2D();
+  buildRevealPath(path, state.cursorX, state.cursorY, getAnimatedRadius() * 0.96, state.shapeMode, getShapeRotation());
+  ctx.strokeStyle = 'rgba(0,0,0,0.18)';
   ctx.lineWidth = 1;
   ctx.setLineDash([4, 8]);
-  ctx.stroke();
+  ctx.stroke(path);
   ctx.restore();
+}
+
+function getAnimatedRadius() {
+  return state.radius * (0.9 + 0.12 * Math.sin(motionTime * 1.7));
+}
+
+function getShapeRotation() {
+  return motionTime * 0.22;
+}
+
+function smoothstep(edge0, edge1, x) {
+  const t = Math.max(0, Math.min(1, (x - edge0) / Math.max(0.0001, edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
+function getRevealStrength(dx, dy) {
+  const rotation = getShapeRotation();
+  const angle = Math.atan2(dy, dx) - rotation;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const r = Math.max(1, getAnimatedRadius());
+  const softness = state.softness;
+
+  if (state.shapeMode === 0) {
+    const inner = r * (1 - softness);
+    if (dist >= r) return 0;
+    if (dist <= inner) return 1;
+    return 1 - smoothstep(inner, r, dist);
+  }
+
+  if (state.shapeMode === 1) {
+    const points = 5;
+    const wave = 0.72 + 0.28 * Math.cos(points * angle);
+    const boundary = r * wave;
+    const inner = boundary * (1 - softness * 0.9);
+    if (dist >= boundary) return 0;
+    if (dist <= inner) return 1;
+    return 1 - smoothstep(inner, boundary, dist);
+  }
+
+  if (state.shapeMode === 2) {
+    const spiralTurns = 3.5;
+    const normalized = dist / r;
+    if (normalized >= 1) return 0;
+    const armPhase = angle + normalized * Math.PI * spiralTurns;
+    const arm = Math.abs(Math.sin(armPhase * 2));
+    const bandWidth = 0.32 + softness * 0.45;
+    const band = 1 - smoothstep(bandWidth, 1, arm);
+    const radialFade = 1 - smoothstep(0.78, 1, normalized);
+    return Math.max(0, Math.min(1, band * radialFade));
+  }
+
+  if (state.shapeMode === 3) {
+    const normalized = dist / r;
+    if (normalized >= 1) return 0;
+    const petals = 8;
+    const ringWave = 0.5 + 0.5 * Math.cos(normalized * Math.PI * 8 - angle * petals);
+    const ringMask = 1 - smoothstep(0.58, 0.92, Math.abs(ringWave - 0.5) * 2);
+    const centerFade = 1 - smoothstep(0.82, 1, normalized);
+    return Math.max(0, Math.min(1, ringMask * centerFade));
+  }
+
+  const normalized = dist / r;
+  if (normalized >= 1) return 0;
+  const petals = 6;
+  const petalRadius = r * (0.62 + 0.24 * Math.cos(petals * angle));
+  const inner = petalRadius * (1 - softness);
+  if (dist >= petalRadius) return 0;
+  if (dist <= inner) return 1;
+  const petal = 1 - smoothstep(inner, petalRadius, dist);
+  const core = 1 - smoothstep(0.2, 0.45, normalized);
+  return Math.max(petal, core * 0.9);
+}
+
+function buildRevealPath(path, cx, cy, radius, shapeMode, rotation) {
+  if (shapeMode === 0) {
+    path.arc(cx, cy, radius, 0, Math.PI * 2);
+    return;
+  }
+
+  const steps = shapeMode === 2 ? 220 : 140;
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps) * Math.PI * 2 + rotation;
+    let localRadius = radius;
+
+    if (shapeMode === 1) {
+      localRadius = radius * (0.72 + 0.28 * Math.cos(5 * (t - rotation)));
+    } else if (shapeMode === 2) {
+      localRadius = radius * (0.25 + 0.75 * (i / steps));
+    } else if (shapeMode === 3) {
+      localRadius = radius * (0.72 + 0.12 * Math.cos(8 * (t - rotation)) + 0.08 * Math.cos(16 * (t - rotation)));
+    } else {
+      localRadius = radius * (0.62 + 0.24 * Math.cos(6 * (t - rotation)));
+    }
+
+    const x = cx + Math.cos(t) * localRadius;
+    const y = cy + Math.sin(t) * localRadius;
+    if (i === 0) path.moveTo(x, y);
+    else path.lineTo(x, y);
+  }
 }
 
 function updateTiles(dt) {
   const speed = 1 - Math.pow(1 - state.speed, dt * 60);
-  const radius = state.radius;
-  const innerRadius = radius * (1 - state.softness);
 
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
@@ -420,16 +524,7 @@ function updateTiles(dt) {
       if (state.pointerActive) {
         const dx = centerX - state.cursorX;
         const dy = centerY - state.cursorY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist < radius) {
-          if (dist <= innerRadius) {
-            target = 1;
-          } else {
-            const falloff = 1 - (dist - innerRadius) / Math.max(1, radius - innerRadius);
-            target = Math.max(0, Math.min(1, falloff));
-          }
-        }
+        target = getRevealStrength(dx, dy);
       }
 
       tile.flip = lerp(tile.flip, target, speed);
@@ -482,6 +577,7 @@ function render(now) {
   requestAnimationFrame(render);
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
+  motionTime += dt;
 
   drawBackground();
   updateTiles(dt);
@@ -502,6 +598,14 @@ function wireRange(id, key, formatter = v => v) {
     if (key === 'tileSize') resizeGrid();
   });
 }
+
+const shapeMode = document.getElementById('shapeMode');
+const shapeLabel = document.getElementById('shapeLabel');
+shapeLabel.textContent = SHAPES[state.shapeMode];
+shapeMode.addEventListener('input', () => {
+  state.shapeMode = parseInt(shapeMode.value, 10);
+  shapeLabel.textContent = SHAPES[state.shapeMode];
+});
 
 wireRange('tileSize', 'tileSize', v => String(parseInt(v, 10)));
 wireRange('radius', 'radius', v => String(parseInt(v, 10)));
