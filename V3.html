@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quip Peek V3</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --panel: rgba(18, 18, 18, 0.95);
+    --line: #2a2a2a;
+    --text: #ececec;
+    --dim: #8a8a8a;
+    --accent: #f0f0f0;
+    --canvas-bg: #f2f2ee;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    background:
+      radial-gradient(circle at top left, rgba(255,255,255,0.05), transparent 30%),
+      linear-gradient(135deg, #101010 0%, #060606 100%);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  #sidebar {
+    padding: 20px;
+    border-right: 1px solid var(--line);
+    background: var(--panel);
+    backdrop-filter: blur(10px);
+    overflow-y: auto;
+  }
+
+  .logo {
+    margin-bottom: 18px;
+    font-size: 12px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+
+  .logo span { color: var(--dim); }
+
+  .section {
+    padding: 14px 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .section:first-of-type {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .section-label {
+    margin-bottom: 10px;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--dim);
+    text-transform: uppercase;
+  }
+
+  .upload-btn,
+  .mode-btn,
+  .action-btn {
+    width: 100%;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--text);
+    padding: 11px 12px;
+    font: inherit;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+
+  .upload-btn:hover,
+  .mode-btn:hover,
+  .action-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .mode-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .mode-btn {
+    padding: 9px 8px;
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
+
+  .mode-btn.active {
+    border-color: var(--accent);
+    color: #000;
+    background: var(--accent);
+  }
+
+  .action-btn.primary {
+    border-color: #6e6e6e;
+  }
+
+  .action-btn.primary:hover {
+    background: var(--accent);
+    color: #000;
+  }
+
+  input[type="file"] { display: none; }
+
+  .control {
+    margin-bottom: 12px;
+  }
+
+  .control:last-child { margin-bottom: 0; }
+
+  .control-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 5px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+  }
+
+  .control-head span:first-child { color: var(--dim); }
+
+  input[type="range"] {
+    width: 100%;
+    appearance: none;
+    height: 2px;
+    background: var(--line);
+    border-radius: 999px;
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+
+  input[type="color"] {
+    width: 100%;
+    height: 42px;
+    border: 1px solid var(--line);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .note {
+    color: var(--dim);
+    font-size: 11px;
+    line-height: 1.55;
+  }
+
+  .code-box {
+    width: 100%;
+    min-height: 240px;
+    resize: vertical;
+    border: 1px solid var(--line);
+    background: rgba(0, 0, 0, 0.28);
+    color: var(--text);
+    padding: 12px;
+    font: 11px/1.45 'Share Tech Mono', monospace;
+    white-space: pre;
+    tab-size: 2;
+  }
+
+  #main {
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #stage {
+    width: min(86vw, 940px);
+    aspect-ratio: 1;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+    background: #111;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.35);
+  }
+
+  #canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    background: var(--canvas-bg);
+    cursor: crosshair;
+  }
+
+  #emptyState {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    pointer-events: none;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.42);
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0)),
+      var(--canvas-bg);
+  }
+
+  #emptyState strong {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 38px;
+    letter-spacing: 5px;
+    color: rgba(0,0,0,0.26);
+  }
+
+  @media (max-width: 860px) {
+    body {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+    }
+
+    #sidebar {
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    #main {
+      padding: 16px;
+    }
+
+    #stage {
+      width: min(100%, 760px);
+    }
+  }
+</style>
+</head>
+<body>
+  <aside id="sidebar">
+    <div class="logo">quip peek <span>// v3</span></div>
+
+    <div class="section">
+      <div class="section-label">Source</div>
+      <button class="upload-btn" id="uploadBtn">Load Image</button>
+      <input type="file" id="fileInput" accept="image/*">
+    </div>
+
+    <div class="section">
+      <div class="section-label">Silhouette</div>
+      <div class="mode-grid" id="modeGrid"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Generator Params</div>
+      <div class="control">
+        <div class="control-head"><span>Rays</span><span id="radialRaysVal">6</span></div>
+        <input type="range" id="radialRays" min="3" max="24" step="1" value="6">
+      </div>
+      <div id="params"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Reveal</div>
+      <div class="control">
+        <div class="control-head"><span>Tile Size</span><span id="tileSizeVal">22</span></div>
+        <input type="range" id="tileSize" min="10" max="56" step="2" value="22">
+      </div>
+      <div class="control">
+        <div class="control-head"><span>Radius</span><span id="radiusVal">150</span></div>
+        <input type="range" id="radius" min="50" max="280" step="5" value="150">
+      </div>
+      <div class="control">
+        <div class="control-head"><span>Softness</span><span id="softnessVal">0.24</span></div>
+        <input type="range" id="softness" min="0.05" max="0.8" step="0.01" value="0.24">
+      </div>
+      <div class="control">
+        <div class="control-head"><span>Flip Speed</span><span id="speedVal">0.16</span></div>
+        <input type="range" id="speed" min="0.04" max="0.35" step="0.01" value="0.16">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Pattern Motion</div>
+      <div class="control">
+        <div class="control-head"><span>Scale</span><span id="patternScaleVal">1.00</span></div>
+        <input type="range" id="patternScale" min="0.4" max="2.4" step="0.05" value="1.00">
+      </div>
+      <div class="control">
+        <div class="control-head"><span>Density</span><span id="densityVal">0.58</span></div>
+        <input type="range" id="density" min="0.2" max="0.9" step="0.01" value="0.58">
+      </div>
+      <div class="control">
+        <div class="control-head"><span>Pulse</span><span id="pulseVal">0.12</span></div>
+        <input type="range" id="pulse" min="0.00" max="0.35" step="0.01" value="0.12">
+      </div>
+      <div class="control">
+        <div class="control-head"><span>Rotate</span><span id="rotateVal">0.22</span></div>
+        <input type="range" id="rotate" min="-1.2" max="1.2" step="0.01" value="0.22">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Background</div>
+      <div class="control">
+        <div class="control-head"><span>Color</span><span id="bgColorLabel">#f2f2ee</span></div>
+        <input type="color" id="bgColor" value="#f2f2ee">
+      </div>
+      <button class="action-btn primary" id="centerBtn">Recenter Reveal</button>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Export</div>
+      <button class="action-btn" id="copyFramerBtn">Copy Framer Component</button>
+      <p class="note" id="copyStatus" style="margin-top:8px;">Copies a Framer code component with the current silhouette settings baked in. Only the video source remains editable in Framer.</p>
+      <textarea class="code-box" id="framerCode" spellcheck="false" readonly style="margin-top:10px;"></textarea>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Usage</div>
+      <p class="note">The hover silhouette now comes from the same procedural vocabulary as the original generator. Pick a mode from the source set, then move across the canvas to reveal the image through a living pattern instead of a generic geometric mask.</p>
+    </div>
+  </aside>
+
+  <main id="main">
+    <div id="stage">
+      <canvas id="canvas"></canvas>
+      <div id="emptyState">
+        <strong>Pattern</strong>
+        <div>Load an image to begin</div>
+      </div>
+    </div>
+  </main>
+
+<script>
+const CANVAS_SIZE = 900;
+const MODES = [
+  { id: 0, name: 'Noise Lines' },
+  { id: 1, name: 'Cyber Waves' },
+  { id: 2, name: 'Biomorph' },
+  { id: 3, name: 'Mandala' },
+  { id: 4, name: 'Crystal' },
+  { id: 5, name: 'Plasma' },
+];
+const MODE_PARAMS = [
+  ['Scale', 'Thickness', 'Layers', 'Time Y', 'Time X'],
+  ['Freq 1', 'Freq 2', 'Amp 1', 'Amp 2', 'Thresh'],
+  ['Scale', 'Twist', 'Time X', 'Time Y', 'Detail'],
+  ['Ring Freq', 'Twist', 'Rings', 'Density', 'Speed'],
+  ['Scale', 'Sharpness', 'Time Y', 'Time X', 'Depth'],
+  ['Freq 1', 'Freq 2', 'Freq 3', 'Density', 'Bands'],
+];
+
+const state = {
+  mode: 0,
+  tileSize: 22,
+  radius: 150,
+  softness: 0.24,
+  speed: 0.16,
+  bgColor: '#f2f2ee',
+  patternScale: 1.0,
+  density: 0.58,
+  pulse: 0.12,
+  rotate: 0.22,
+  radialRays: 6,
+  p1: 0.5,
+  p2: 0.5,
+  p3: 0.5,
+  p4: 0.5,
+  p5: 0.5,
+  cursorX: CANVAS_SIZE / 2,
+  cursorY: CANVAS_SIZE / 2,
+  pointerActive: false,
+};
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const dpr = window.devicePixelRatio || 1;
+canvas.width = CANVAS_SIZE * dpr;
+canvas.height = CANVAS_SIZE * dpr;
+ctx.scale(dpr, dpr);
+ctx.imageSmoothingEnabled = true;
+
+const fileInput = document.getElementById('fileInput');
+const emptyState = document.getElementById('emptyState');
+
+let imageBitmap = null;
+let fittedImage = null;
+let cols = 0;
+let rows = 0;
+let tiles = [];
+let lastTime = performance.now();
+let motionTime = 0;
+let noiseSeed = Math.random() * 9999;
+
+function resizeGrid() {
+  cols = Math.ceil(CANVAS_SIZE / state.tileSize);
+  rows = Math.ceil(CANVAS_SIZE / state.tileSize);
+  const next = new Array(cols * rows);
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const idx = row * cols + col;
+      next[idx] = { flip: tiles[idx] ? tiles[idx].flip : 0 };
+    }
+  }
+
+  tiles = next;
+}
+
+function fitImageToCanvas(source) {
+  if (!source) {
+    fittedImage = null;
+    return;
+  }
+
+  const scale = Math.max(CANVAS_SIZE / source.width, CANVAS_SIZE / source.height);
+  const drawWidth = source.width * scale;
+  const drawHeight = source.height * scale;
+  const dx = (CANVAS_SIZE - drawWidth) / 2;
+  const dy = (CANVAS_SIZE - drawHeight) / 2;
+  fittedImage = { source, dx, dy, drawWidth, drawHeight };
+}
+
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function smoothstep(edge0, edge1, x) {
+  const t = Math.max(0, Math.min(1, (x - edge0) / Math.max(0.0001, edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
+function easeFlip(value) {
+  return 0.5 - 0.5 * Math.cos(value * Math.PI);
+}
+
+function hash(x, y) {
+  const n = Math.sin(x * 127.1 + y * 311.7 + noiseSeed * 74.3) * 43758.5453;
+  return n - Math.floor(n);
+}
+
+function fade(f) {
+  return f * f * f * (f * (f * 6 - 15) + 10);
+}
+
+function noise2(x, y) {
+  const ix = Math.floor(x);
+  const iy = Math.floor(y);
+  const fx = x - ix;
+  const fy = y - iy;
+  const ux = fade(fx);
+  const uy = fade(fy);
+  const a = hash(ix, iy);
+  const b = hash(ix + 1, iy);
+  const c = hash(ix, iy + 1);
+  const d = hash(ix + 1, iy + 1);
+  return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
+}
+
+function noiseP(x, y) {
+  let value = 0;
+  let amp = 1;
+  let freq = 1;
+  let max = 0;
+  for (let o = 0; o < 4; o++) {
+    value += noise2(x * freq, y * freq) * amp;
+    max += amp;
+    amp *= 0.5;
+    freq *= 2;
+  }
+  return value / max;
+}
+
+function getAnimatedRadius() {
+  return state.radius * (1 + state.pulse * Math.sin(motionTime * 1.7));
+}
+
+function getShapeRotation() {
+  return motionTime * state.rotate;
+}
+
+function getPointerPosition(event) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = CANVAS_SIZE / rect.width;
+  const scaleY = CANVAS_SIZE / rect.height;
+  return {
+    x: (event.clientX - rect.left) * scaleX,
+    y: (event.clientY - rect.top) * scaleY,
+  };
+}
+
+function updateCursor(event) {
+  const pos = getPointerPosition(event);
+  state.cursorX = pos.x;
+  state.cursorY = pos.y;
+  state.pointerActive = true;
+}
+
+function clearCursor() {
+  state.pointerActive = false;
+}
+
+function foldAng(ang, rays) {
+  const step = Math.PI / rays;
+  const a = ((ang % (step * 2)) + step * 2) % (step * 2);
+  return a < step ? a : step * 2 - a;
+}
+
+function getModePattern(normalized, angle, time) {
+  const sc = state.patternScale;
+  const density = state.density;
+  const r = normalized;
+  const rays = Math.max(3, state.radialRays);
+  const folded = foldAng(angle, rays);
+
+  if (state.mode === 0) {
+    const scale = (0.45 + state.p1 * 1.1) * sc;
+    const thick = 0.04 + state.p2 * 0.22;
+    const layers = 1 + Math.floor(state.p3 * 3);
+    let best = 0;
+    for (let l = 0; l < layers; l++) {
+      const layerScale = 1 + l * 0.45;
+      const n = noiseP(
+        r * 16 * scale * layerScale + time * (0.1 + state.p5 * 0.7),
+        folded * 10 * scale * (1 + l * 0.3) + time * (0.1 + state.p4 * 0.7)
+      );
+      const d = Math.abs(n - Math.floor(n * 6) / 6);
+      best = Math.max(best, 1 - smoothstep(0, thick, d));
+    }
+    return best * (0.6 + (1 - normalized) * 0.4);
+  }
+
+  if (state.mode === 1) {
+    const freq1 = 0.7 + 2.8 * state.p1;
+    const freq2 = 0.5 + 2.0 * state.p2;
+    const amp1 = 0.25 + 1.5 * state.p3;
+    const amp2 = 0.2 + 1.2 * state.p4;
+    const thresh = 0.1 + 0.85 * state.p5;
+    const rr = r * 18 * sc;
+    const l1 = Math.sin(rr * freq1 + Math.cos(angle * rays) * amp1 + time * 1.0);
+    const l2 = Math.cos(rr * freq2 + Math.sin(angle * rays) * amp2 + time * 0.75);
+    const l3 = Math.sin(r * 28 + time * 0.5);
+    const v = Math.abs((l1 + l2 + l3) / 3);
+    return smoothstep(thresh * density * 0.6, 1, v);
+  }
+
+  if (state.mode === 2) {
+    const scale = (0.7 + state.p1 * 1.2) * sc;
+    const twist = state.p2 * Math.PI * 2;
+    const n1 = noiseP(r * 18 * scale + time * (0.1 + state.p3 * 0.9), folded * 7 * scale + time * 0.28);
+    const n2 = noiseP(r * 36 * scale + time * 0.24, folded * (10 + state.p5 * 10) * scale - time * (0.1 + state.p4 * 0.9));
+    const v = Math.sin(n1 * Math.PI * 4 + twist + angle * 1.2) * Math.cos(n2 * Math.PI * 4);
+    return smoothstep(density * 0.4, 1, (v + 1) * 0.5);
+  }
+
+  if (state.mode === 3) {
+    const radial1 = 6 + state.p1 * 18;
+    const twist = 1 + state.p2 * 8;
+    const rings = 2 + state.p3 * 10;
+    const dens = 1 + state.p4 * 6;
+    const speed = 0.2 + state.p5 * 1.5;
+    const v1 = Math.sin(r * radial1 * sc * rings + time * speed);
+    const v2 = Math.cos(r * (4 + twist * 2) * sc - time * speed * 0.7);
+    const v3 = Math.sin(angle * rays + time * 0.4);
+    const val = (v1 + v2 + v3 + 3) / 6;
+    const ringMask = smoothstep((density * dens) * 0.2, 1, val);
+    const petals = 0.5 + 0.5 * Math.cos(angle * rays + twist) * (1 - r * 0.55);
+    return ringMask * (0.4 + petals * 0.6);
+  }
+
+  if (state.mode === 4) {
+    const scale = (0.8 + state.p1 * 1.1) * sc;
+    const sharpness = state.p2;
+    const px = r * 24 * scale;
+    const py = folded * 8 * scale;
+    const warp = noise2(px * 0.35 + time * 0.1, py * 0.35 + time * 0.08) * 1.8;
+    const n1 = Math.sin((px + warp + time * (0.15 + state.p4 * 0.9)) * Math.PI * 1.5);
+    const n2 = Math.sin((py + warp * 0.7 - time * (0.15 + state.p3 * 0.9)) * Math.PI * 2.1);
+    const n3 = Math.sin((px + py) * (0.6 + state.p5 * 0.8) * Math.PI + warp * 0.5 + time * 0.4);
+    const v = (n1 + n2 + n3 + 3) / 6;
+    return smoothstep((density * 0.4) + sharpness * 0.3, 1, v);
+  }
+
+  const f1 = 0.5 + state.p1 * 2.0;
+  const f2 = 0.4 + state.p2 * 1.8;
+  const f3 = 0.35 + state.p3 * 1.5;
+  const dens = 0.3 + state.p4 * 0.9;
+  const bands = 2 + state.p5 * 6;
+  const p = (
+    Math.sin(r * 24 * sc * f1 + time * 0.3) +
+    Math.sin(angle * 18 * sc * f2 + time * 0.18) +
+    Math.sin((r * 14 + angle * 8) * sc * f3 + time * 0.15) +
+    Math.sin(r * 10 - time * 0.25)
+  ) / 4;
+  const v = Math.abs(Math.sin(p * Math.PI * bands));
+  return smoothstep(dens * density * 0.45, 1, v);
+}
+
+function getRevealStrength(dx, dy) {
+  const radius = Math.max(1, getAnimatedRadius());
+  const rotation = getShapeRotation();
+  const rotatedX = dx * Math.cos(-rotation) - dy * Math.sin(-rotation);
+  const rotatedY = dx * Math.sin(-rotation) + dy * Math.cos(-rotation);
+  const dist = Math.sqrt(rotatedX * rotatedX + rotatedY * rotatedY);
+  if (dist >= radius) return 0;
+
+  const normalized = dist / radius;
+  const angle = Math.atan2(rotatedY, rotatedX);
+  const inner = 1 - state.softness;
+  const radialEnvelope = 1 - smoothstep(inner, 1, normalized);
+  const pattern = getModePattern(normalized, angle, motionTime);
+  const centerBias = 1 - smoothstep(0.82, 1, normalized);
+
+  return Math.max(0, Math.min(1, pattern * radialEnvelope * 0.78 + centerBias * 0.22));
+}
+
+function drawBackground() {
+  ctx.fillStyle = state.bgColor;
+  ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+}
+
+function drawFieldAura() {
+  if (!state.pointerActive) return;
+  const radius = getAnimatedRadius();
+  const grd = ctx.createRadialGradient(
+    state.cursorX, state.cursorY, radius * 0.08,
+    state.cursorX, state.cursorY, radius * 1.2
+  );
+  grd.addColorStop(0, 'rgba(255,255,255,0.10)');
+  grd.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.arc(state.cursorX, state.cursorY, radius * 1.2, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawTileOverlay(x, y, size, intensity) {
+  const grd = ctx.createLinearGradient(x, y, x + size, y);
+  grd.addColorStop(0, `rgba(255,255,255,${0.24 * intensity})`);
+  grd.addColorStop(1, `rgba(255,255,255,${0.07 * intensity})`);
+  ctx.fillStyle = grd;
+  ctx.fillRect(x, y, size, size);
+}
+
+function updateTiles(dt) {
+  const speed = 1 - Math.pow(1 - state.speed, dt * 60);
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const idx = row * cols + col;
+      const tile = tiles[idx];
+      const x = col * state.tileSize;
+      const y = row * state.tileSize;
+      const centerX = x + state.tileSize * 0.5;
+      const centerY = y + state.tileSize * 0.5;
+
+      let target = 0;
+      if (state.pointerActive) {
+        target = getRevealStrength(centerX - state.cursorX, centerY - state.cursorY);
+      }
+
+      tile.flip = lerp(tile.flip, target, speed);
+    }
+  }
+}
+
+function drawTiles() {
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const idx = row * cols + col;
+      const tile = tiles[idx];
+      if (tile.flip < 0.002) continue;
+
+      const x = col * state.tileSize;
+      const y = row * state.tileSize;
+      const size = Math.min(state.tileSize, CANVAS_SIZE - x, CANVAS_SIZE - y);
+      if (size <= 0) continue;
+
+      const eased = easeFlip(tile.flip);
+      const scaleX = Math.max(0.02, Math.abs(Math.cos(eased * Math.PI)));
+      const visibleWidth = size * scaleX;
+      const drawX = x + (size - visibleWidth) * 0.5;
+      const showingImage = eased >= 0.5 && fittedImage;
+
+      if (showingImage) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(drawX, y, visibleWidth, size);
+        ctx.clip();
+        ctx.drawImage(
+          fittedImage.source,
+          fittedImage.dx,
+          fittedImage.dy,
+          fittedImage.drawWidth,
+          fittedImage.drawHeight
+        );
+        ctx.restore();
+      } else {
+        ctx.fillStyle = state.bgColor;
+        ctx.fillRect(drawX, y, visibleWidth, size);
+      }
+
+      drawTileOverlay(drawX, y, visibleWidth, tile.flip);
+    }
+  }
+}
+
+function render(now) {
+  requestAnimationFrame(render);
+  const dt = Math.min(0.05, (now - lastTime) / 1000);
+  lastTime = now;
+  motionTime += dt;
+
+  drawBackground();
+  drawFieldAura();
+  updateTiles(dt);
+
+  if (imageBitmap) {
+    drawTiles();
+  }
+}
+
+function buildModeButtons() {
+  const grid = document.getElementById('modeGrid');
+  MODES.forEach(mode => {
+    const btn = document.createElement('button');
+    btn.className = 'mode-btn' + (mode.id === state.mode ? ' active' : '');
+    btn.textContent = mode.name;
+    btn.onclick = () => {
+      state.mode = mode.id;
+      document.querySelectorAll('.mode-btn').forEach(el => el.classList.remove('active'));
+      btn.classList.add('active');
+      syncParamLabels();
+      refreshFramerCode();
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function buildParamControls() {
+  const root = document.getElementById('params');
+  for (let i = 1; i <= 5; i++) {
+    const row = document.createElement('div');
+    row.className = 'control';
+    row.innerHTML = `
+      <div class="control-head"><span id="p${i}Lbl"></span><span id="p${i}Val">0.50</span></div>
+      <input type="range" id="p${i}" min="0" max="1" step="0.01" value="${state['p' + i].toFixed(2)}">
+    `;
+    root.appendChild(row);
+  }
+}
+
+function syncParamLabels() {
+  for (let i = 1; i <= 5; i++) {
+    const label = document.getElementById(`p${i}Lbl`);
+    const input = document.getElementById(`p${i}`);
+    const value = document.getElementById(`p${i}Val`);
+    if (label) label.textContent = MODE_PARAMS[state.mode][i - 1];
+    if (input) input.value = state[`p${i}`].toFixed(2);
+    if (value) value.textContent = state[`p${i}`].toFixed(2);
+  }
+}
+
+function wireRange(id, key, formatter = v => v) {
+  const input = document.getElementById(id);
+  const label = document.getElementById(id + 'Val');
+  label.textContent = formatter(input.value);
+  input.addEventListener('input', () => {
+    state[key] = parseFloat(input.value);
+    label.textContent = formatter(input.value);
+    if (key === 'tileSize') resizeGrid();
+    refreshFramerCode();
+  });
+}
+
+function esc(str) {
+  return String(str).replace(/\\/g, '\\\\').replace(/`/g, '\\`');
+}
+
+function getCurrentFramerCode() {
+  const cfg = {
+    mode: state.mode,
+    radialRays: state.radialRays,
+    tileSize: state.tileSize,
+    radius: state.radius,
+    softness: state.softness,
+    speed: state.speed,
+    bgColor: state.bgColor,
+    patternScale: state.patternScale,
+    density: state.density,
+    pulse: state.pulse,
+    rotate: state.rotate,
+    p1: state.p1,
+    p2: state.p2,
+    p3: state.p3,
+    p4: state.p4,
+    p5: state.p5,
+  };
+
+  return `import * as React from "react"
+import { addPropertyControls, ControlType } from "framer"
+
+type Tile = { flip: number }
+
+const CONFIG = ${JSON.stringify(cfg, null, 4)}
+
+function clamp(value: number, min: number, max: number) {
+    return Math.min(max, Math.max(min, value))
+}
+
+function lerp(a: number, b: number, t: number) {
+    return a + (b - a) * t
+}
+
+function smoothstep(edge0: number, edge1: number, x: number) {
+    const t = clamp((x - edge0) / Math.max(0.0001, edge1 - edge0), 0, 1)
+    return t * t * (3 - 2 * t)
+}
+
+function easeFlip(value: number) {
+    return 0.5 - 0.5 * Math.cos(value * Math.PI)
+}
+
+function hash(x: number, y: number, seed: number) {
+    const n = Math.sin(x * 127.1 + y * 311.7 + seed * 74.3) * 43758.5453
+    return n - Math.floor(n)
+}
+
+function fade(f: number) {
+    return f * f * f * (f * (f * 6 - 15) + 10)
+}
+
+function noise2(x: number, y: number, seed: number) {
+    const ix = Math.floor(x)
+    const iy = Math.floor(y)
+    const fx = x - ix
+    const fy = y - iy
+    const ux = fade(fx)
+    const uy = fade(fy)
+    const a = hash(ix, iy, seed)
+    const b = hash(ix + 1, iy, seed)
+    const c = hash(ix, iy + 1, seed)
+    const d = hash(ix + 1, iy + 1, seed)
+    return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy
+}
+
+function noiseP(x: number, y: number, seed: number) {
+    let value = 0
+    let amp = 1
+    let freq = 1
+    let max = 0
+    for (let o = 0; o < 4; o++) {
+        value += noise2(x * freq, y * freq, seed) * amp
+        max += amp
+        amp *= 0.5
+        freq *= 2
+    }
+    return value / max
+}
+
+function foldAng(ang: number, rays: number) {
+    const step = Math.PI / rays
+    const a = ((ang % (step * 2)) + step * 2) % (step * 2)
+    return a < step ? a : step * 2 - a
+}
+
+function getModePattern(normalized: number, angle: number, time: number, seed: number) {
+    const sc = CONFIG.patternScale
+    const density = CONFIG.density
+    const r = normalized
+    const rays = Math.max(3, CONFIG.radialRays)
+    const folded = foldAng(angle, rays)
+
+    if (CONFIG.mode === 0) {
+        const scale = (0.45 + CONFIG.p1 * 1.1) * sc
+        const thick = 0.04 + CONFIG.p2 * 0.22
+        const layers = 1 + Math.floor(CONFIG.p3 * 3)
+        let best = 0
+        for (let l = 0; l < layers; l++) {
+            const layerScale = 1 + l * 0.45
+            const n = noiseP(
+                r * 16 * scale * layerScale + time * (0.1 + CONFIG.p5 * 0.7),
+                folded * 10 * scale * (1 + l * 0.3) + time * (0.1 + CONFIG.p4 * 0.7),
+                seed
+            )
+            const d = Math.abs(n - Math.floor(n * 6) / 6)
+            best = Math.max(best, 1 - smoothstep(0, thick, d))
+        }
+        return best * (0.6 + (1 - normalized) * 0.4)
+    }
+
+    if (CONFIG.mode === 1) {
+        const freq1 = 0.7 + 2.8 * CONFIG.p1
+        const freq2 = 0.5 + 2.0 * CONFIG.p2
+        const amp1 = 0.25 + 1.5 * CONFIG.p3
+        const amp2 = 0.2 + 1.2 * CONFIG.p4
+        const thresh = 0.1 + 0.85 * CONFIG.p5
+        const rr = r * 18 * sc
+        const l1 = Math.sin(rr * freq1 + Math.cos(angle * rays) * amp1 + time * 1.0)
+        const l2 = Math.cos(rr * freq2 + Math.sin(angle * rays) * amp2 + time * 0.75)
+        const l3 = Math.sin(r * 28 + time * 0.5)
+        const v = Math.abs((l1 + l2 + l3) / 3)
+        return smoothstep(thresh * density * 0.6, 1, v)
+    }
+
+    if (CONFIG.mode === 2) {
+        const scale = (0.7 + CONFIG.p1 * 1.2) * sc
+        const twist = CONFIG.p2 * Math.PI * 2
+        const n1 = noiseP(r * 18 * scale + time * (0.1 + CONFIG.p3 * 0.9), folded * 7 * scale + time * 0.28, seed)
+        const n2 = noiseP(r * 36 * scale + time * 0.24, folded * (10 + CONFIG.p5 * 10) * scale - time * (0.1 + CONFIG.p4 * 0.9), seed)
+        const v = Math.sin(n1 * Math.PI * 4 + twist + angle * 1.2) * Math.cos(n2 * Math.PI * 4)
+        return smoothstep(density * 0.4, 1, (v + 1) * 0.5)
+    }
+
+    if (CONFIG.mode === 3) {
+        const radial1 = 6 + CONFIG.p1 * 18
+        const twist = 1 + CONFIG.p2 * 8
+        const rings = 2 + CONFIG.p3 * 10
+        const dens = 1 + CONFIG.p4 * 6
+        const speed = 0.2 + CONFIG.p5 * 1.5
+        const v1 = Math.sin(r * radial1 * sc * rings + time * speed)
+        const v2 = Math.cos(r * (4 + twist * 2) * sc - time * speed * 0.7)
+        const v3 = Math.sin(angle * rays + time * 0.4)
+        const val = (v1 + v2 + v3 + 3) / 6
+        const ringMask = smoothstep((density * dens) * 0.2, 1, val)
+        const petals = 0.5 + 0.5 * Math.cos(angle * rays + twist) * (1 - r * 0.55)
+        return ringMask * (0.4 + petals * 0.6)
+    }
+
+    if (CONFIG.mode === 4) {
+        const scale = (0.8 + CONFIG.p1 * 1.1) * sc
+        const sharpness = CONFIG.p2
+        const px = r * 24 * scale
+        const py = folded * 8 * scale
+        const warp = noise2(px * 0.35 + time * 0.1, py * 0.35 + time * 0.08, seed) * 1.8
+        const n1 = Math.sin((px + warp + time * (0.15 + CONFIG.p4 * 0.9)) * Math.PI * 1.5)
+        const n2 = Math.sin((py + warp * 0.7 - time * (0.15 + CONFIG.p3 * 0.9)) * Math.PI * 2.1)
+        const n3 = Math.sin((px + py) * (0.6 + CONFIG.p5 * 0.8) * Math.PI + warp * 0.5 + time * 0.4)
+        const v = (n1 + n2 + n3 + 3) / 6
+        return smoothstep((density * 0.4) + sharpness * 0.3, 1, v)
+    }
+
+    const f1 = 0.5 + CONFIG.p1 * 2.0
+    const f2 = 0.4 + CONFIG.p2 * 1.8
+    const f3 = 0.35 + CONFIG.p3 * 1.5
+    const dens = 0.3 + CONFIG.p4 * 0.9
+    const bands = 2 + CONFIG.p5 * 6
+    const p = (
+        Math.sin(r * 24 * sc * f1 + time * 0.3) +
+        Math.sin(angle * 18 * sc * f2 + time * 0.18) +
+        Math.sin((r * 14 + angle * 8) * sc * f3 + time * 0.15) +
+        Math.sin(r * 10 - time * 0.25)
+    ) / 4
+    const v = Math.abs(Math.sin(p * Math.PI * bands))
+    return smoothstep(dens * density * 0.45, 1, v)
+}
+
+function useLoadedVideo(src?: string) {
+    const [video, setVideo] = React.useState<HTMLVideoElement | null>(null)
+
+    React.useEffect(() => {
+        if (!src) {
+            setVideo(null)
+            return
+        }
+
+        const next = document.createElement("video")
+        next.crossOrigin = "anonymous"
+        next.muted = true
+        next.loop = true
+        next.autoplay = true
+        next.playsInline = true
+        next.preload = "auto"
+        next.onloadeddata = () => {
+            void next.play().catch(() => {})
+            setVideo(next)
+        }
+        next.onerror = () => setVideo(null)
+        next.src = src
+        next.load()
+
+        return () => {
+            next.pause()
+            next.removeAttribute("src")
+            next.load()
+        }
+    }, [src])
+
+    return video
+}
+
+function drawFittedMedia(
+    ctx: CanvasRenderingContext2D,
+    media: CanvasImageSource,
+    mediaWidth: number,
+    mediaHeight: number,
+    width: number,
+    height: number
+) {
+    const scale = Math.max(width / mediaWidth, height / mediaHeight)
+    const drawWidth = mediaWidth * scale
+    const drawHeight = mediaHeight * scale
+    const dx = (width - drawWidth) / 2
+    const dy = (height - drawHeight) / 2
+    ctx.drawImage(media, dx, dy, drawWidth, drawHeight)
+}
+
+export default function QuipPeekExport(props: { video?: string }) {
+    const { video } = props
+    const containerRef = React.useRef<HTMLDivElement>(null)
+    const canvasRef = React.useRef<HTMLCanvasElement>(null)
+    const animationRef = React.useRef<number>(0)
+    const lastTimeRef = React.useRef<number>(0)
+    const motionTimeRef = React.useRef<number>(0)
+    const seedRef = React.useRef(1337)
+    const pointerRef = React.useRef({ x: 0, y: 0, active: false })
+    const tilesRef = React.useRef<Tile[]>([])
+    const videoEl = useLoadedVideo(video)
+
+    React.useEffect(() => {
+        const element = containerRef.current
+        const canvas = canvasRef.current
+        if (!element || !canvas) return
+        const ctx = canvas.getContext("2d")
+        if (!ctx) return
+
+        const resizeGrid = (width: number, height: number) => {
+            const cols = Math.ceil(width / CONFIG.tileSize)
+            const rows = Math.ceil(height / CONFIG.tileSize)
+            const prev = tilesRef.current
+            const next: Tile[] = new Array(cols * rows)
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const idx = row * cols + col
+                    next[idx] = { flip: prev[idx]?.flip ?? 0 }
+                }
+            }
+            tilesRef.current = next
+        }
+
+        const resizeCanvas = () => {
+            const rect = element.getBoundingClientRect()
+            const dpr = window.devicePixelRatio || 1
+            canvas.width = Math.max(1, Math.round(rect.width * dpr))
+            canvas.height = Math.max(1, Math.round(rect.height * dpr))
+            canvas.style.width = rect.width + "px"
+            canvas.style.height = rect.height + "px"
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+            resizeGrid(rect.width, rect.height)
+            if (!pointerRef.current.active) {
+                pointerRef.current.x = rect.width / 2
+                pointerRef.current.y = rect.height / 2
+            }
+        }
+
+        const updatePointer = (clientX: number, clientY: number) => {
+            const rect = canvas.getBoundingClientRect()
+            pointerRef.current.x = clientX - rect.left
+            pointerRef.current.y = clientY - rect.top
+            pointerRef.current.active = true
+        }
+
+        const drawTileOverlay = (x: number, y: number, width: number, height: number, intensity: number) => {
+            const gradient = ctx.createLinearGradient(x, y, x + width, y)
+            gradient.addColorStop(0, "rgba(255,255,255," + 0.24 * intensity + ")")
+            gradient.addColorStop(1, "rgba(255,255,255," + 0.07 * intensity + ")")
+            ctx.fillStyle = gradient
+            ctx.fillRect(x, y, width, height)
+        }
+
+        const renderFrame = (now: number) => {
+            animationRef.current = requestAnimationFrame(renderFrame)
+
+            const dt = lastTimeRef.current ? Math.min(0.05, (now - lastTimeRef.current) / 1000) : 1 / 60
+            lastTimeRef.current = now
+            motionTimeRef.current += dt
+
+            const width = canvas.width / (window.devicePixelRatio || 1)
+            const height = canvas.height / (window.devicePixelRatio || 1)
+            const cols = Math.ceil(width / CONFIG.tileSize)
+            const rows = Math.ceil(height / CONFIG.tileSize)
+            const tiles = tilesRef.current
+            const pointer = pointerRef.current
+            const radius = CONFIG.radius * (1 + CONFIG.pulse * Math.sin(motionTimeRef.current * 1.7))
+            const rotation = motionTimeRef.current * CONFIG.rotate
+            const blendSpeed = 1 - Math.pow(1 - CONFIG.speed, dt * 60)
+
+            ctx.clearRect(0, 0, width, height)
+            ctx.fillStyle = "${esc(state.bgColor)}"
+            ctx.fillRect(0, 0, width, height)
+
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const idx = row * cols + col
+                    const tile = tiles[idx]
+                    if (!tile) continue
+
+                    const x = col * CONFIG.tileSize
+                    const y = row * CONFIG.tileSize
+                    const tileWidth = Math.min(CONFIG.tileSize, width - x)
+                    const tileHeight = Math.min(CONFIG.tileSize, height - y)
+                    const centerX = x + tileWidth * 0.5
+                    const centerY = y + tileHeight * 0.5
+
+                    let target = 0
+                    if (pointer.active) {
+                        const dx = centerX - pointer.x
+                        const dy = centerY - pointer.y
+                        const rotatedX = dx * Math.cos(-rotation) - dy * Math.sin(-rotation)
+                        const rotatedY = dx * Math.sin(-rotation) + dy * Math.cos(-rotation)
+                        const dist = Math.sqrt(rotatedX * rotatedX + rotatedY * rotatedY)
+
+                        if (dist < radius) {
+                            const normalized = dist / radius
+                            const angle = Math.atan2(rotatedY, rotatedX)
+                            const radialEnvelope = 1 - smoothstep(1 - CONFIG.softness, 1, normalized)
+                            const pattern = getModePattern(normalized, angle, motionTimeRef.current, seedRef.current)
+                            const centerBias = 1 - smoothstep(0.82, 1, normalized)
+                            target = clamp(pattern * radialEnvelope * 0.78 + centerBias * 0.22, 0, 1)
+                        }
+                    }
+
+                    tile.flip = lerp(tile.flip, target, blendSpeed)
+                    if (tile.flip < 0.002) continue
+
+                    const eased = easeFlip(tile.flip)
+                    const scaleX = Math.max(0.02, Math.abs(Math.cos(eased * Math.PI)))
+                    const visibleWidth = tileWidth * scaleX
+                    const drawX = x + (tileWidth - visibleWidth) * 0.5
+                    const showVideo = eased >= 0.5 && videoEl && videoEl.readyState >= 2
+
+                    if (showVideo) {
+                        ctx.save()
+                        ctx.beginPath()
+                        ctx.rect(drawX, y, visibleWidth, tileHeight)
+                        ctx.clip()
+                        drawFittedMedia(ctx, videoEl, videoEl.videoWidth, videoEl.videoHeight, width, height)
+                        ctx.restore()
+                    } else {
+                        ctx.fillStyle = "${esc(state.bgColor)}"
+                        ctx.fillRect(drawX, y, visibleWidth, tileHeight)
+                    }
+
+                    drawTileOverlay(drawX, y, visibleWidth, tileHeight, tile.flip)
+                }
+            }
+        }
+
+        const onPointerMove = (event: PointerEvent) => updatePointer(event.clientX, event.clientY)
+        const onPointerEnter = (event: PointerEvent) => updatePointer(event.clientX, event.clientY)
+        const onPointerLeave = () => {
+            pointerRef.current.active = false
+        }
+
+        const observer = new ResizeObserver(resizeCanvas)
+        observer.observe(element)
+        element.addEventListener("pointermove", onPointerMove)
+        element.addEventListener("pointerenter", onPointerEnter)
+        element.addEventListener("pointerleave", onPointerLeave)
+
+        resizeCanvas()
+        animationRef.current = requestAnimationFrame(renderFrame)
+
+        return () => {
+            cancelAnimationFrame(animationRef.current)
+            observer.disconnect()
+            element.removeEventListener("pointermove", onPointerMove)
+            element.removeEventListener("pointerenter", onPointerEnter)
+            element.removeEventListener("pointerleave", onPointerLeave)
+        }
+    }, [videoEl])
+
+    return (
+        <div
+            ref={containerRef}
+            style={{
+                width: "100%",
+                height: "100%",
+                overflow: "hidden",
+                position: "relative",
+                background: "${esc(state.bgColor)}",
+                touchAction: "none",
+            }}
+        >
+            <canvas
+                ref={canvasRef}
+                style={{
+                    width: "100%",
+                    height: "100%",
+                    display: "block",
+                    background: "${esc(state.bgColor)}",
+                }}
+            />
+        </div>
+    )
+}
+
+addPropertyControls(QuipPeekExport, {
+    video: {
+        type: ControlType.File,
+        title: "Video",
+        allowedFileTypes: ["mp4", "mov", "webm", "ogg"],
+    },
+})
+`;
+}
+
+async function copyFramerComponent() {
+  const status = document.getElementById('copyStatus');
+  const codeBox = document.getElementById('framerCode');
+  const code = getCurrentFramerCode();
+  codeBox.value = code;
+  try {
+    await navigator.clipboard.writeText(code);
+    status.textContent = 'Framer component copied. Paste it into a Framer code component file.';
+  } catch (err) {
+    codeBox.focus();
+    codeBox.select();
+    status.textContent = 'Copy failed. The generated code is selected below for manual copy.';
+  }
+}
+
+function refreshFramerCode() {
+  const codeBox = document.getElementById('framerCode');
+  if (!codeBox) return;
+  codeBox.value = getCurrentFramerCode();
+}
+
+wireRange('tileSize', 'tileSize', v => String(parseInt(v, 10)));
+wireRange('radius', 'radius', v => String(parseInt(v, 10)));
+wireRange('softness', 'softness', v => Number(v).toFixed(2));
+wireRange('speed', 'speed', v => Number(v).toFixed(2));
+wireRange('patternScale', 'patternScale', v => Number(v).toFixed(2));
+wireRange('density', 'density', v => Number(v).toFixed(2));
+wireRange('pulse', 'pulse', v => Number(v).toFixed(2));
+wireRange('rotate', 'rotate', v => Number(v).toFixed(2));
+wireRange('radialRays', 'radialRays', v => String(parseInt(v, 10)));
+
+const bgColor = document.getElementById('bgColor');
+bgColor.addEventListener('input', () => {
+  state.bgColor = bgColor.value;
+  document.getElementById('bgColorLabel').textContent = bgColor.value;
+  document.documentElement.style.setProperty('--canvas-bg', bgColor.value);
+  refreshFramerCode();
+});
+
+document.getElementById('uploadBtn').addEventListener('click', () => fileInput.click());
+document.getElementById('copyFramerBtn').addEventListener('click', copyFramerComponent);
+
+fileInput.addEventListener('change', async (event) => {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  imageBitmap = await createImageBitmap(file);
+  fitImageToCanvas(imageBitmap);
+  emptyState.style.display = 'none';
+  noiseSeed = Math.random() * 9999;
+  refreshFramerCode();
+});
+
+document.getElementById('centerBtn').addEventListener('click', () => {
+  state.cursorX = CANVAS_SIZE / 2;
+  state.cursorY = CANVAS_SIZE / 2;
+  state.pointerActive = true;
+});
+
+canvas.addEventListener('mousemove', updateCursor);
+canvas.addEventListener('mouseenter', updateCursor);
+canvas.addEventListener('mouseleave', clearCursor);
+canvas.addEventListener('touchstart', event => {
+  const touch = event.touches[0];
+  if (!touch) return;
+  updateCursor(touch);
+}, { passive: true });
+canvas.addEventListener('touchmove', event => {
+  const touch = event.touches[0];
+  if (!touch) return;
+  updateCursor(touch);
+}, { passive: true });
+canvas.addEventListener('touchend', clearCursor, { passive: true });
+
+buildModeButtons();
+buildParamControls();
+for (let i = 1; i <= 5; i++) {
+  wireRange(`p${i}`, `p${i}`, v => Number(v).toFixed(2));
+}
+syncParamLabels();
+refreshFramerCode();
+resizeGrid();
+requestAnimationFrame(render);
+</script>
+</body>
+</html>

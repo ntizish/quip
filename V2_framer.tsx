@@ -4,7 +4,7 @@ import { addPropertyControls, ControlType } from "framer"
 type ShapeMode = "circle" | "star" | "spiral" | "mandala" | "flower"
 
 type Props = {
-    image?: string
+    video?: string
     backgroundColor: string
     shape: ShapeMode
     tileSize: number
@@ -141,43 +141,59 @@ function buildRevealPath(
     }
 }
 
-function useLoadedImage(src?: string) {
-    const [image, setImage] = React.useState<HTMLImageElement | null>(null)
+function useLoadedVideo(src?: string) {
+    const [video, setVideo] = React.useState<HTMLVideoElement | null>(null)
 
     React.useEffect(() => {
         if (!src) {
-            setImage(null)
+            setVideo(null)
             return
         }
 
-        const next = new Image()
+        const next = document.createElement("video")
         next.crossOrigin = "anonymous"
-        next.decoding = "async"
-        next.onload = () => setImage(next)
-        next.onerror = () => setImage(null)
+        next.muted = true
+        next.loop = true
+        next.autoplay = true
+        next.playsInline = true
+        next.preload = "auto"
+        next.onloadeddata = () => {
+            void next.play().catch(() => {})
+            setVideo(next)
+        }
+        next.onerror = () => setVideo(null)
         next.src = src
+        next.load()
+
+        return () => {
+            next.pause()
+            next.removeAttribute("src")
+            next.load()
+        }
     }, [src])
 
-    return image
+    return video
 }
 
-function drawFittedImage(
+function drawFittedMedia(
     ctx: CanvasRenderingContext2D,
-    image: HTMLImageElement,
+    media: CanvasImageSource,
+    mediaWidth: number,
+    mediaHeight: number,
     width: number,
     height: number
 ) {
-    const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight)
-    const drawWidth = image.naturalWidth * scale
-    const drawHeight = image.naturalHeight * scale
+    const scale = Math.max(width / mediaWidth, height / mediaHeight)
+    const drawWidth = mediaWidth * scale
+    const drawHeight = mediaHeight * scale
     const dx = (width - drawWidth) / 2
     const dy = (height - drawHeight) / 2
-    ctx.drawImage(image, dx, dy, drawWidth, drawHeight)
+    ctx.drawImage(media, dx, dy, drawWidth, drawHeight)
 }
 
 export default function V2_framer(props: Props) {
     const {
-        image,
+        video,
         backgroundColor,
         shape,
         tileSize,
@@ -201,7 +217,7 @@ export default function V2_framer(props: Props) {
         active: false,
     })
     const tilesRef = React.useRef<Tile[]>([])
-    const imageEl = useLoadedImage(image)
+    const videoEl = useLoadedVideo(video)
 
     const resizeGrid = React.useCallback((width: number, height: number) => {
         const cols = Math.ceil(width / tileSize)
@@ -319,14 +335,14 @@ export default function V2_framer(props: Props) {
                     const scaleX = Math.max(0.02, Math.abs(Math.cos(eased * Math.PI)))
                     const visibleWidth = tileWidth * scaleX
                     const drawX = x + (tileWidth - visibleWidth) * 0.5
-                    const showImage = eased >= 0.5 && imageEl
+                    const showVideo = eased >= 0.5 && videoEl && videoEl.readyState >= 2
 
-                    if (showImage) {
+                    if (showVideo) {
                         ctx.save()
                         ctx.beginPath()
                         ctx.rect(drawX, y, visibleWidth, tileHeight)
                         ctx.clip()
-                        drawFittedImage(ctx, imageEl, width, height)
+                        drawFittedMedia(ctx, videoEl, videoEl.videoWidth, videoEl.videoHeight, width, height)
                         ctx.restore()
                     } else {
                         ctx.fillStyle = backgroundColor
@@ -337,16 +353,7 @@ export default function V2_framer(props: Props) {
                 }
             }
 
-            if (pointer.active && showCursorOutline) {
-                const path = new Path2D()
-                buildRevealPath(path, pointer.x, pointer.y, animatedRadius * 0.96, shape, rotation)
-                ctx.save()
-                ctx.strokeStyle = "rgba(0,0,0,0.18)"
-                ctx.lineWidth = 1
-                ctx.setLineDash([4, 8])
-                ctx.stroke(path)
-                ctx.restore()
-            }
+            void showCursorOutline
         }
 
         const resizeObserver = new ResizeObserver(resizeCanvas)
@@ -368,7 +375,6 @@ export default function V2_framer(props: Props) {
     }, [
         backgroundColor,
         flipSpeed,
-        imageEl,
         pulseAmount,
         pulseSpeed,
         radius,
@@ -378,6 +384,7 @@ export default function V2_framer(props: Props) {
         showCursorOutline,
         softness,
         tileSize,
+        videoEl,
     ])
 
     React.useEffect(() => {
@@ -426,9 +433,10 @@ V2_framer.defaultProps = {
 }
 
 addPropertyControls(V2_framer, {
-    image: {
-        type: ControlType.Image,
-        title: "Image",
+    video: {
+        type: ControlType.File,
+        title: "Video",
+        allowedFileTypes: ["mp4", "mov", "webm", "ogg"],
     },
     backgroundColor: {
         type: ControlType.Color,

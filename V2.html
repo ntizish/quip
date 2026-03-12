@@ -402,11 +402,11 @@ function drawRevealCursor() {
   ctx.save();
   const path = new Path2D();
   buildRevealPath(path, state.cursorX, state.cursorY, getAnimatedRadius() * 0.96, state.shapeMode, getShapeRotation());
-  ctx.strokeStyle = 'rgba(0,0,0,0.18)';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([4, 8]);
-  ctx.stroke(path);
-  ctx.restore();
+  // ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+  // // ctx.lineWidth = 1;
+  // // ctx.setLineDash([4, 8]);
+  // ctx.stroke(path);
+  // ctx.restore();
 }
 
 function getAnimatedRadius() {
