@@ -3,2155 +3,1331 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PIXEL PATTERN GEN</title>
+<title>Quip Peek V3</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;500;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&display=swap');
 
   :root {
-    --bg: #111111;
-    --panel: #161616;
-    --border: #2a2a2a;
-    --accent: #ffffff;
-    --accent2: #aaaaaa;
-    --accent3: #cccccc;
-    --text: #dddddd;
-    --dim: #555555;
+    --bg: #0a0a0a;
+    --panel: rgba(18, 18, 18, 0.95);
+    --line: #2a2a2a;
+    --text: #ececec;
+    --dim: #8a8a8a;
+    --accent: #f0f0f0;
+    --canvas-bg: #f2f2ee;
   }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
+
   body {
-    background: var(--bg);
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    background:
+      radial-gradient(circle at top left, rgba(255,255,255,0.05), transparent 30%),
+      linear-gradient(135deg, #101010 0%, #060606 100%);
     color: var(--text);
     font-family: 'Share Tech Mono', monospace;
-    display: flex;
-    height: 100vh;
-    overflow: hidden;
   }
 
-  /* ── SIDEBAR ── */
   #sidebar {
-    width: 22%; min-width: 200px; max-width: 300px;
+    padding: 20px;
+    border-right: 1px solid var(--line);
     background: var(--panel);
-    border-right: 1px solid var(--border);
-    display: flex; flex-direction: column;
-    overflow-y: auto; overflow-x: hidden;
-  }
-  #sidebar::-webkit-scrollbar { width: 4px; }
-  #sidebar::-webkit-scrollbar-track { background: var(--panel); }
-  #sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-  .logo {
-    padding: 16px 18px 12px;
-    border-bottom: 1px solid var(--border);
-    letter-spacing: 4px; font-size: 11px;
-    color: var(--accent); text-transform: uppercase;
-  }
-  .logo span { color: var(--dim); }
-
-  .section { padding: 11px 16px; border-bottom: 1px solid var(--border); }
-  .section-label {
-    font-size: 9px; letter-spacing: 3px;
-    color: var(--dim); text-transform: uppercase;
-    margin-bottom: 8px;
-  }
-
-  /* Mode buttons */
-  .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-  .mode-btn {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 9px; padding: 6px 3px;
-    cursor: pointer; letter-spacing: 0.5px;
-    text-transform: uppercase; transition: all 0.15s;
-    text-align: center;
-  }
-  .mode-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .mode-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
-
-  /* Sliders */
-  .param-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
-  .param-label {
-    font-size: 9px; color: var(--dim);
-    width: 74px; flex-shrink: 0;
-    text-transform: uppercase; line-height: 1.2;
-  }
-  .param-value {
-    font-size: 9px; color: var(--accent);
-    width: 28px; text-align: right; flex-shrink: 0;
-  }
-  input[type=range] {
-    flex: 1; -webkit-appearance: none;
-    height: 2px; background: var(--border);
-    outline: none; border-radius: 1px;
-  }
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 11px; height: 11px;
-    background: var(--accent); border-radius: 50%;
-    cursor: pointer; transition: transform 0.1s;
-  }
-  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.4); }
-
-  /* Shape picker */
-  .shape-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 5px; margin-bottom: 8px; }
-  .shape-btn {
-    background: transparent; border: 1px solid var(--border);
-    color: var(--text); font-size: 16px; padding: 6px 0;
-    cursor: pointer; text-align: center;
-    transition: all 0.15s; border-radius: 2px;
-  }
-  .shape-btn:hover { border-color: var(--accent); }
-  .shape-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
-
-  /* Color scheme swatches */
-  .color-scheme-grid { display:flex; flex-direction:row; gap:8px; margin-bottom:10px; }
-  .color-swatch {
-    height: 36px; border-radius: 3px; cursor: pointer;
-    border: 2px solid transparent;
-    position: relative; overflow: hidden;
-    transition: border-color 0.15s, transform 0.1s;
-    display: flex; align-items: flex-end; padding: 3px 5px;
-  }
-  .color-swatch:hover { transform: scale(1.04); }
-  .color-swatch.active { border-color: var(--accent) !important; }
-  .color-swatch span {
-    font-size: 8px; letter-spacing: 1px; text-transform: uppercase;
-    color: rgba(255,255,255,0.9);
-    text-shadow: 0 1px 3px rgba(0,0,0,0.9);
-    pointer-events: none; line-height: 1;
-  }
-  .color-swatch.dark-text span { color: rgba(0,0,0,0.7); text-shadow: none; }
-
-  /* Color variation */
-  .color-var-row { display: flex; gap: 5px; }
-  .cvar-btn {
-    flex: 1; background: transparent;
-    border: 1px solid var(--border); color: var(--dim);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 9px; padding: 5px 2px;
-    cursor: pointer; text-align: center;
-    letter-spacing: 0.5px; text-transform: uppercase;
-    transition: all 0.15s;
-  }
-  .cvar-btn:hover { border-color: var(--text); color: var(--text); }
-  .cvar-btn.active { border-color: var(--accent); color: var(--accent); }
-
-  /* Toggles */
-  .toggle-row {
-    display: flex; align-items: center;
-    justify-content: space-between; margin-bottom: 7px;
-  }
-  .toggle-label { font-size: 9px; letter-spacing: 1px; color: var(--text); text-transform: uppercase; }
-  .toggle { position: relative; width: 36px; height: 18px; }
-  .toggle input { opacity: 0; width: 0; height: 0; }
-  .toggle-track {
-    position: absolute; inset: 0;
-    background: var(--border); border-radius: 9px;
-    cursor: pointer; transition: background 0.2s;
-  }
-  .toggle-track::after {
-    content: ''; position: absolute;
-    left: 3px; top: 3px;
-    width: 12px; height: 12px;
-    background: var(--dim); border-radius: 50%;
-    transition: all 0.2s;
-  }
-  .toggle input:checked + .toggle-track { background: var(--accent); }
-  .toggle input:checked + .toggle-track::after { left: 21px; background: #000; }
-
-  /* Buttons */
-  .btn-row { display: flex; gap: 5px; margin-top: 4px; }
-  .btn {
-    flex: 1; background: transparent;
-    border: 1px solid var(--border); color: var(--text);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 9px; padding: 7px 2px;
-    cursor: pointer; letter-spacing: 1px;
-    text-transform: uppercase; transition: all 0.15s; text-align: center;
-  }
-  .btn:hover { border-color: var(--accent2); color: var(--accent2); }
-  .btn.primary { border-color: var(--accent3); color: var(--accent3); }
-  .btn.primary:hover { background: var(--accent3); color: #fff; }
-  .btn.reset:hover { border-color: #ffcc00; color: #ffcc00; }
-
-  /* Size buttons */
-  .size-btn-row { display: flex; gap: 4px; flex: 1; }
-  .size-btn {
-    flex: 1; background: transparent;
-    border: 1px solid var(--border); color: var(--dim);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 8px; padding: 5px 2px;
-    cursor: pointer; text-align: center;
-    letter-spacing: 0.5px; text-transform: uppercase;
-    transition: all 0.15s;
-  }
-  .size-btn:hover { border-color: var(--text); color: var(--text); }
-  .size-btn.active { border-color: var(--accent); color: var(--accent); background: transparent; }
-
-  /* New color grid: two columns, wide horizontal swatches */
-  .color-grid-2col { display: flex; gap: 6px; }
-  .color-col { display: flex; flex-direction: column; gap: 4px; flex: 1; }
-  .color-col-label { font-size: 8px; letter-spacing: 2px; color: var(--dim); text-transform: uppercase; margin-bottom: 3px; }
-  .color-swatch-wide {
-    height: 28px; border-radius: 3px; cursor: pointer;
-    border: 2px solid transparent;
-    transition: border-color 0.15s, transform 0.1s;
-  }
-  .color-swatch-wide:hover { transform: scale(1.02); }
-  .color-swatch-wide.active { border-color: var(--accent) !important; }
-
-  /* Collapsible */
-  .collapsible-header {
-    display: flex; align-items: center; justify-content: space-between;
-    cursor: pointer;
-    font-size: 9px; letter-spacing: 2px; color: var(--dim);
-    text-transform: uppercase; user-select: none;
-  }
-  .collapsible-header:hover { color: var(--text); }
-  .collapsible-arrow { font-size: 10px; transition: transform 0.2s; }
-  .collapsible-arrow.open { transform: rotate(180deg); }
-  .collapsible-body { display: none; }
-  .collapsible-body.open { display: block; }
-
-
-  #main {
-    flex: 1; display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 12px;
-    background: var(--bg);
-    padding: 16px;
-    min-width: 0;
-  }
-  #canvas-wrap {
-    position: relative;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-    width: min(calc(100vh - 80px), 100%);
-    aspect-ratio: 1;
-    flex-shrink: 1;
-  }
-  canvas {
-    display: block;
-    image-rendering: pixelated;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-  #bottom-bar {
-    display: flex; align-items: center; justify-content: space-between;
-    width: 100%; flex-shrink: 0; gap: 12px;
-  }
-  #anim-controls { display: flex; align-items: center; gap: 6px; }
-  #btnPlayPause {
-    background: transparent; border: 1px solid var(--border);
-    color: var(--text); font-size: 14px;
-    width: 32px; height: 32px; border-radius: 4px;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    transition: all 0.15s; flex-shrink: 0;
-  }
-  #btnPlayPause:hover { border-color: var(--accent); color: var(--accent); }
-  #btnUndo:disabled { opacity: 0.25; cursor: default; }
-  .speed-btn {
-    background: transparent; border: 1px solid var(--border); color: var(--dim);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 8px; padding: 0 8px; height: 32px; border-radius: 4px;
-    cursor: pointer; letter-spacing: 0.5px;
-    transition: all 0.15s;
-  }
-  .speed-btn:hover { border-color: var(--text); color: var(--text); }
-  .speed-btn.active { border-color: var(--accent); color: var(--accent); }
-  #export-btns { display: flex; gap: 6px; flex-shrink: 0; }
-  .export-btn {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--dim);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 9px; padding: 0 14px; height: 32px;
-    cursor: pointer; letter-spacing: 2px;
-    text-transform: uppercase;
-    border-radius: 4px;
-    transition: all 0.15s;
-  }
-  .export-btn:hover { border-color: var(--text); color: var(--text); }
-  .export-btn.reset:hover { border-color: #ffcc00; color: #ffcc00; }
-
-  #preset-panel {
-    width: 9%; min-width: 70px; max-width: 80px;
-    background: var(--panel);
-    border-left: 1px solid var(--border);
-    display: flex; flex-direction: column;
-    align-items: center;
-    padding: 16px 8px 12px;
-    gap: 10px;
+    backdrop-filter: blur(10px);
     overflow-y: auto;
   }
-  #preset-actions {
-    margin-top: auto;
-    display: flex; flex-direction: column; gap: 5px; width: 100%;
-    padding-top: 10px;
-    border-top: 1px solid var(--border);
-  }
-  .preset-action-btn {
-    width: 100%; background: transparent;
-    border: 1px solid var(--border); color: var(--dim);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 9px; padding: 7px 2px;
-    cursor: pointer; letter-spacing: 1px;
-    text-transform: uppercase; transition: all 0.15s; text-align: center;
-  }
-  .preset-action-btn:hover { border-color: var(--text); color: var(--text); }
-  .preset-action-btn.reset:hover { border-color: #ffcc00; color: #ffcc00; }
-  .preset-action-btn:disabled { opacity: 0.25; cursor: default; }
-  .preset-label {
-    font-size: 8px; letter-spacing: 2px; color: var(--dim);
-    text-transform: uppercase; margin-bottom: 2px;
-  }
-  #preset-grid { display: flex; flex-direction: column; gap: 12px; width: 100%; padding: 6px; }
-  .preset-slot {
-    width: 100%; aspect-ratio: 1;
-    border: 1px solid var(--border); border-radius: 6px;
-    cursor: pointer; position: relative;
-    transition: border-color 0.15s; flex-shrink: 0;
-  }
-  .preset-slot img {
-    position: absolute; inset: 0; width: 100%; height: 100%;
-    object-fit: cover; image-rendering: pixelated;
-    border-radius: 5px;
-  }
-  .preset-slot:hover { border-color: var(--accent2); }
-  .preset-slot.filled:hover { border-color: var(--accent); }
-  .preset-slot .plus {
-    position: absolute; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px; color: var(--border);
-    transition: color 0.15s; user-select: none;
-  }
-  .preset-slot:hover .plus { color: var(--dim); }
-  .preset-slot .preset-del {
-    position: absolute; top: -5px; right: -5px;
-    width: 14px; height: 14px;
-    background: #222; border: 1px solid var(--border);
-    border-radius: 50%;
-    font-size: 7px; color: var(--dim);
-    cursor: pointer; z-index: 10; line-height: 14px;
-    text-align: center;
-    transition: all 0.1s;
-  }
-  .preset-slot .preset-del:hover { background: #ff4444; color: #fff; border-color: #ff4444; }
 
-  /* ── SIDEBAR TABS ── */
-  #sidebar-tabs {
-    display: flex;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
+  .logo {
+    margin-bottom: 18px;
+    font-size: 12px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
   }
-  .sidebar-tab {
-    flex: 1; background: transparent;
-    border: none; border-bottom: 2px solid transparent;
+
+  .logo span { color: var(--dim); }
+
+  .section {
+    padding: 14px 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .section:first-of-type {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .section-label {
+    margin-bottom: 10px;
+    font-size: 10px;
+    letter-spacing: 3px;
     color: var(--dim);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 9px; padding: 10px 4px;
-    cursor: pointer; letter-spacing: 2px;
-    text-transform: uppercase; transition: all 0.15s;
-    text-align: center; margin-bottom: -1px;
+    text-transform: uppercase;
   }
-  .sidebar-tab:hover { color: var(--text); }
-  .sidebar-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
 
-  #sidebar-panel-gen,
-  #sidebar-panel-img  { display: none; flex-direction: column; flex: 1; overflow-y: auto; overflow-x: hidden; }
-  #sidebar-panel-img  { padding: 16px; }
-  #sidebar-panel-gen.active,
-  #sidebar-panel-img.active  { display: flex; }
-
-  .empty-panel {
-    flex: 1; display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 8px; opacity: 0.3;
+  .upload-btn,
+  .mode-btn,
+  .action-btn {
+    width: 100%;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--text);
+    padding: 11px 12px;
+    font: inherit;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
   }
-  .empty-panel-icon { font-size: 28px; }
-  .empty-panel-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--dim); }
 
-  /* Upload buttons */
-  .upload-btn {
-    width: 100%; background: transparent;
-    border: 1px solid var(--border); color: var(--text);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 9px; padding: 12px 10px;
-    cursor: pointer; letter-spacing: 1.5px;
-    text-transform: uppercase; transition: all 0.15s;
-    display: flex; align-items: center; gap: 8px;
-    border-radius: 3px;
+  .upload-btn:hover,
+  .mode-btn:hover,
+  .action-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
   }
-  .upload-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .upload-btn-icon { font-size: 14px; }
+
+  .mode-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .mode-btn {
+    padding: 9px 8px;
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
+
+  .mode-btn.active {
+    border-color: var(--accent);
+    color: #000;
+    background: var(--accent);
+  }
+
+  .action-btn.primary {
+    border-color: #6e6e6e;
+  }
+
+  .action-btn.primary:hover {
+    background: var(--accent);
+    color: #000;
+  }
+
+  input[type="file"] { display: none; }
+
+  .control {
+    margin-bottom: 12px;
+  }
+
+  .control:last-child { margin-bottom: 0; }
+
+  .control-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 5px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+  }
+
+  .control-head span:first-child { color: var(--dim); }
+
+  input[type="range"] {
+    width: 100%;
+    appearance: none;
+    height: 2px;
+    background: var(--line);
+    border-radius: 999px;
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+
+  input[type="color"] {
+    width: 100%;
+    height: 42px;
+    border: 1px solid var(--line);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .note {
+    color: var(--dim);
+    font-size: 11px;
+    line-height: 1.55;
+  }
+
+  .code-box {
+    width: 100%;
+    min-height: 240px;
+    resize: vertical;
+    border: 1px solid var(--line);
+    background: rgba(0, 0, 0, 0.28);
+    color: var(--text);
+    padding: 12px;
+    font: 11px/1.45 'Share Tech Mono', monospace;
+    white-space: pre;
+    tab-size: 2;
+  }
+
+  #main {
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #stage {
+    width: min(86vw, 940px);
+    aspect-ratio: 1;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+    background: #111;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.35);
+  }
+
+  #canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    background: var(--canvas-bg);
+    cursor: crosshair;
+  }
+
+  #emptyState {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    pointer-events: none;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.42);
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0)),
+      var(--canvas-bg);
+  }
+
+  #emptyState strong {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 38px;
+    letter-spacing: 5px;
+    color: rgba(0,0,0,0.26);
+  }
+
+  @media (max-width: 860px) {
+    body {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+    }
+
+    #sidebar {
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    #main {
+      padding: 16px;
+    }
+
+    #stage {
+      width: min(100%, 760px);
+    }
+  }
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
+  <aside id="sidebar">
+    <div class="logo">quip peek <span>// v3</span></div>
 
-<div id="sidebar">
-  <div class="logo">quip gen <span>// v3</span></div>
-
-  <div id="sidebar-tabs">
-    <button class="sidebar-tab active" data-panel="gen">Pattern</button>
-    <button class="sidebar-tab" data-panel="img">Image</button>
-  </div>
-
-  <div id="sidebar-panel-gen" class="active">
-
-  <div class="section">
-    <div class="section-label">Pattern Mode</div>
-    <div class="mode-grid" id="modeGrid"></div>
-    <div class="toggle-row" style="margin-top:8px">
-      <span class="toggle-label">Radial Sym</span>
-      <label class="toggle"><input type="checkbox" id="radialSym"><span class="toggle-track"></span></label>
-    </div>
-    <div class="toggle-row">
-      <span class="toggle-label">Circle Mask</span>
-      <label class="toggle"><input type="checkbox" id="circleMask" checked><span class="toggle-track"></span></label>
-    </div>
-    <div class="param-row">
-      <span class="param-label">Rays</span>
-      <input type="range" id="radialRays" min="3" max="24" step="1" value="6">
-      <span class="param-value" id="radialRaysVal">6</span>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-label">Parameters</div>
-    <div id="params"></div>
-  </div>
-
-  <div class="section">
-    <div class="section-label">Pixel Style</div>
-    <div class="shape-grid" id="shapeGrid"></div>
-    <div class="toggle-row">
-      <span class="toggle-label">Mix Shapes</span>
-      <label class="toggle"><input type="checkbox" id="mixShapes"><span class="toggle-track"></span></label>
-    </div>
-    <div class="param-row" style="margin-bottom:7px">
-      <span class="param-label">Size</span>
-      <div class="size-btn-row" id="sizeBtnRow"></div>
-    </div>
-    <div class="toggle-row">
-      <span class="toggle-label">Spacing</span>
-      <label class="toggle"><input type="checkbox" id="spacingToggle"><span class="toggle-track"></span></label>
-    </div>
-    <div class="param-row">
-      <span class="param-label">Zoom</span>
-      <input type="range" id="shapeScale" min="0.3" max="2.0" step="0.05" value="1.0">
-      <span class="param-value" id="shapeScaleVal">1.0</span>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-label">Color Scheme</div>
-    <div id="colorGrid"></div>
-    <div class="toggle-row" id="mixToggleRow" style="margin-top:6px;padding-right:50%">
-      <span class="toggle-label">Mix</span>
-      <label class="toggle"><input type="checkbox" id="lightMixToggle"><span class="toggle-track"></span></label>
-    </div>
-    <div id="colorVarRow" style="display:none"></div>
-    <!-- Additional: Vivid + Pantone collapsible -->
-    <div class="collapsible-header" id="additionalHeader" style="padding:8px 0;margin-top:4px;border-top:1px solid var(--border);">
-      <span>Additional</span><span class="collapsible-arrow">▾</span>
-    </div>
-    <div class="collapsible-body" id="additionalBody">
-      <div id="colorGridExtra" style="margin-top:6px;"></div>
-    </div>
-  </div>
-  </div><!-- /sidebar-panel-gen -->
-
-  <div id="sidebar-panel-img">
-    <div class="section" style="border-top:none">
-      <div class="section-label">Presets</div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:4px;" id="gradPresetGrid"></div>
-      <div style="font-size:8px; letter-spacing:1px; color:var(--dim); margin-top:2px;">Click to set as Photo 1 or 2</div>
+    <div class="section">
+      <div class="section-label">Source</div>
+      <button class="upload-btn" id="uploadBtn">Load Image</button>
+      <input type="file" id="fileInput" accept="image/*">
     </div>
 
     <div class="section">
-      <div class="section-label">Upload</div>
-      <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px;">
-        <button class="upload-btn" id="btnUploadPhoto" onclick="document.getElementById('inputPhoto').click()">
-          <span class="upload-btn-icon">🖼</span>
-          <span>Load Photo 1</span>
-        </button>
-        <input type="file" id="inputPhoto" accept="image/*,video/*" style="display:none">
-        <button class="upload-btn" id="btnUploadPhoto2" onclick="document.getElementById('inputPhoto2').click()">
-          <span class="upload-btn-icon">🖼</span>
-          <span>Load Photo 2</span>
-        </button>
-        <input type="file" id="inputPhoto2" accept="image/*,video/*" style="display:none">
+      <div class="section-label">Silhouette</div>
+      <div class="mode-grid" id="modeGrid"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Generator Params</div>
+      <div class="control">
+        <div class="control-head"><span>Rays</span><span id="radialRaysVal">6</span></div>
+        <input type="range" id="radialRays" min="3" max="24" step="1" value="6">
+      </div>
+      <div id="params"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Reveal</div>
+      <div class="control">
+        <div class="control-head"><span>Tile Size</span><span id="tileSizeVal">22</span></div>
+        <input type="range" id="tileSize" min="10" max="56" step="2" value="22">
+      </div>
+      <div class="control">
+        <div class="control-head"><span>Radius</span><span id="radiusVal">150</span></div>
+        <input type="range" id="radius" min="50" max="280" step="5" value="150">
+      </div>
+      <div class="control">
+        <div class="control-head"><span>Softness</span><span id="softnessVal">0.24</span></div>
+        <input type="range" id="softness" min="0.05" max="0.8" step="0.01" value="0.24">
+      </div>
+      <div class="control">
+        <div class="control-head"><span>Flip Speed</span><span id="speedVal">0.16</span></div>
+        <input type="range" id="speed" min="0.04" max="0.35" step="0.01" value="0.16">
       </div>
     </div>
 
     <div class="section">
-      <div class="section-label">Pixel Size</div>
-      <div class="size-btn-row" style="margin-top:4px;">
-        <button class="size-btn active" id="flipSizeS" data-flipsize="20">S</button>
-        <button class="size-btn" id="flipSizeM" data-flipsize="50">M</button>
-        <button class="size-btn" id="flipSizeL" data-flipsize="80">L</button>
+      <div class="section-label">Pattern Motion</div>
+      <div class="control">
+        <div class="control-head"><span>Scale</span><span id="patternScaleVal">1.00</span></div>
+        <input type="range" id="patternScale" min="0.4" max="2.4" step="0.05" value="1.00">
+      </div>
+      <div class="control">
+        <div class="control-head"><span>Density</span><span id="densityVal">0.58</span></div>
+        <input type="range" id="density" min="0.2" max="0.9" step="0.01" value="0.58">
+      </div>
+      <div class="control">
+        <div class="control-head"><span>Pulse</span><span id="pulseVal">0.12</span></div>
+        <input type="range" id="pulse" min="0.00" max="0.35" step="0.01" value="0.12">
+      </div>
+      <div class="control">
+        <div class="control-head"><span>Rotate</span><span id="rotateVal">0.22</span></div>
+        <input type="range" id="rotate" min="-1.2" max="1.2" step="0.01" value="0.22">
+      </div>
+      <div class="control">
+        <div class="control-head"><span>Ambient</span><span id="ambientVal">0.08</span></div>
+        <input type="range" id="ambient" min="0.00" max="0.35" step="0.01" value="0.08">
       </div>
     </div>
 
     <div class="section">
-      <div class="section-label">Wave Type</div>
-      <div class="mode-grid" style="margin-bottom:4px;">
-        <button class="mode-btn active" data-wave="1">Radial</button>
-        <button class="mode-btn" data-wave="2">Pulse</button>
-        <button class="mode-btn" data-wave="3">Diagonal</button>
-        <button class="mode-btn" data-wave="4">Linear</button>
-        <button class="mode-btn" data-wave="5">Spiral</button>
-        <button class="mode-btn" data-wave="6">Rings</button>
+      <div class="section-label">Background</div>
+      <div class="control">
+        <div class="control-head"><span>Color</span><span id="bgColorLabel">#f2f2ee</span></div>
+        <input type="color" id="bgColor" value="#f2f2ee">
+      </div>
+      <button class="action-btn primary" id="centerBtn">Recenter Reveal</button>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Export</div>
+      <button class="action-btn" id="copyFramerBtn">Copy Framer Component</button>
+      <p class="note" id="copyStatus" style="margin-top:8px;">Copies a Framer code component with the current silhouette settings baked in. Only the video source remains editable in Framer.</p>
+      <textarea class="code-box" id="framerCode" spellcheck="false" readonly style="margin-top:10px;"></textarea>
+    </div>
+
+    <div class="section">
+      <div class="section-label">Usage</div>
+      <p class="note">The hover silhouette now comes from the same procedural vocabulary as the original generator. Pick a mode from the source set, then move across the canvas to reveal the image through a living pattern instead of a generic geometric mask.</p>
+    </div>
+  </aside>
+
+  <main id="main">
+    <div id="stage">
+      <canvas id="canvas"></canvas>
+      <div id="emptyState">
+        <strong>Pattern</strong>
+        <div>Load an image to begin</div>
       </div>
     </div>
-
-  </div><!-- /sidebar-panel-img -->
-
-</div>
-
-<div id="main">
-  <div id="canvas-wrap">
-    <canvas id="c"></canvas>
-  </div>
-  <div id="media-wrap" style="display:none; border:1px solid var(--border); border-radius:12px; overflow:hidden; width:min(calc(100vh - 80px),100%); aspect-ratio:1; flex-shrink:1; position:relative; background:#111;">
-    <div id="media-placeholder" style="position:absolute;inset:0;display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; opacity:0.25; pointer-events:none;">
-      <div style="font-size:36px;">🖼</div>
-      <div style="font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--dim);">Load photo or video</div>
-    </div>
-    <canvas id="flipCanvas" style="width:100%;height:100%;display:block;position:absolute;inset:0;"></canvas>
-    <canvas id="overlayCanvas" style="width:100%;height:100%;display:block;position:absolute;inset:0;pointer-events:none;"></canvas>
-  </div>
-  <div id="bottom-bar">
-    <div id="anim-controls">
-      <button id="btnPlayPause">⏸</button>
-      <button class="speed-btn" data-speed="0.015">0.75×</button>
-      <button class="speed-btn active" data-speed="0.02">1×</button>
-      <button class="speed-btn" data-speed="0.025">1.25×</button>
-    </div>
-    <div id="flip-controls" style="display:none;">
-      <button id="btnFlipTrigger" class="export-btn" style="letter-spacing:2px; padding:0 28px; height:32px; border-color:var(--accent3); color:var(--accent3);">▶ Flip</button>
-    </div>
-    <div id="export-btns">
-      <button class="export-btn" id="btnUndo" title="Undo (⌘Z)">↩ Undo</button>
-      <button class="export-btn" id="btnSeed">New Seed</button>
-      <button class="export-btn reset" id="btnReset">Reset</button>
-    </div>
-  </div>
-</div>
-
-<div id="preset-panel">
-  <div class="preset-label">Presets</div>
-  <div id="preset-grid"></div>
-  <div id="preset-actions">
-    <button class="preset-action-btn" id="btnSave">PNG</button>
-    <button class="preset-action-btn" id="btnSaveSvg">SVG</button>
-    <button class="preset-action-btn" id="btnRecMp4">● Video</button>
-  </div>
-</div>
+  </main>
 
 <script>
-// ================================================================
-//  CONSTANTS
-// ================================================================
-const CANVAS_SIZE = 640;
-
+const CANVAS_SIZE = 900;
 const MODES = [
-  { name: "Noise Lines", key: "noiseLines" },
-  { name: "Cyber Waves", key: "cyberWaves" },
-  { name: "Biomorph",    key: "biomorph"   },
-  { name: "Mandala",     key: "mandala"    },
-  { name: "Crystal",     key: "crystal"    },
-  { name: "Plasma",      key: "plasma"     },
+  { id: 0, name: 'Noise Lines' },
+  { id: 1, name: 'Cyber Waves' },
+  { id: 2, name: 'Biomorph' },
+  { id: 3, name: 'Mandala' },
+  { id: 4, name: 'Crystal' },
+  { id: 5, name: 'Plasma' },
 ];
-
-// Semantic param names per mode
 const MODE_PARAMS = [
-  ["Scale",    "Thickness", "Layers",  "Time Y",  "Time X" ],  // Noise Lines
-  ["Freq 1",   "Freq 2",    "Amp 1",   "Amp 2",   "Thresh" ],  // Cyber Waves
-  ["Scale",    "Twist",     "Time X",  "Time Y",  "Detail" ],  // Biomorph
-  ["Ring Freq","Twist",     "Rings",   "Density", "—"      ],  // Mandala
-  ["Scale",    "Sharpness", "Time Y",  "Time X",  "Depth"  ],  // Crystal
-  ["Freq 1",   "Freq 2",    "Freq 3",  "Density", "Bands"  ],  // Plasma
+  ['Scale', 'Thickness', 'Layers', 'Time Y', 'Time X'],
+  ['Freq 1', 'Freq 2', 'Amp 1', 'Amp 2', 'Thresh'],
+  ['Scale', 'Twist', 'Time X', 'Time Y', 'Detail'],
+  ['Ring Freq', 'Twist', 'Rings', 'Density', 'Speed'],
+  ['Scale', 'Sharpness', 'Time Y', 'Time X', 'Depth'],
+  ['Freq 1', 'Freq 2', 'Freq 3', 'Density', 'Bands'],
 ];
 
-// Shapes: square, diamond, circle, plus
-const SHAPES = [
-  { sym: "■", id: 0, tip: "Square"  },
-  { sym: "◆", id: 1, tip: "Diamond" },
-  { sym: "●", id: 2, tip: "Circle"  },
-  { sym: "✚", id: 3, tip: "Plus"    },
-];
-
-// Color schemes — bg + HSL base + range for variation
-// fgBase = [h,s,l], fgRange = [hRange, sRange, lRange]
-// Groups: light (0-5), dark pastel (6-11), vivid tartan (12-17)
-const COLOR_SCHEMES = [
-  // ── Light backgrounds ────────────────────────────────────────
-  { id:0,  name:"Chalk",  bg:"#ffffff",
-    grad:"linear-gradient(135deg,hsl(0,0%,5%),hsl(0,0%,5%))",
-    fgBase:[0,0,0],    fgRange:[0,0,0]  },
-  { id:1,  name:"Coral",  bg:"#f8f0f0",
-    grad:"linear-gradient(135deg,hsl(10,70%,58%),hsl(340,60%,64%))",
-    fgBase:[6,65,52],    fgRange:[38,0,10] },
-  { id:2,  name:"Sky",    bg:"#f0f7ff",
-    grad:"linear-gradient(135deg,hsl(210,54%,56%),hsl(228,46%,62%))",
-    fgBase:[214,50,55],  fgRange:[26,0,10] },
-  { id:3,  name:"Sage",   bg:"#f2faf4",
-    grad:"linear-gradient(135deg,hsl(138,44%,44%),hsl(158,38%,50%))",
-    fgBase:[142,40,44],  fgRange:[30,0,10] },
-  { id:4,  name:"Violet", bg:"#f4f0ff",
-    grad:"linear-gradient(135deg,hsl(272,52%,52%),hsl(300,44%,58%))",
-    fgBase:[275,48,50],  fgRange:[50,0,10] },
-  { id:5,  name:"Peach",  bg:"#fff5ee",
-    grad:"linear-gradient(135deg,hsl(28,60%,58%),hsl(14,55%,62%))",
-    fgBase:[24,55,54],   fgRange:[28,0,10] },
-  // ── Dark: hex palettes with weights ────────────────────────────
-  { id:6,  name:"White", bg:"#000000",
-    grad:"linear-gradient(135deg,#ffffff,#ffffff)",
-    fgBase:[0,0,100],  fgRange:[0,0,0],
-    hexColors:["#ffffff","#ffffff","#ffffff","#ffffff"],
-    hexWeights:[100,0,0,0] },
-  { id:7,  name:"Glitch", bg:"#0c0c18",
-    grad:"linear-gradient(135deg,hsl(240,32%,22%),hsl(240,38%,65%),hsl(0,0%,93%))",
-    fgBase:[240,30,58],  fgRange:[60,10,36],
-    hexColors:["#FEF278","#FFDE53","#EEFF64","#CAFDFB","#BCF4FF","#E6D7FF"],
-    hexWeights:[25,18,15,8,8,26] },
-  { id:8,  name:"Aurora", bg:"#080f0d",
-    grad:"linear-gradient(135deg,hsl(195,36%,22%),hsl(185,42%,62%),hsl(0,0%,92%))",
-    fgBase:[192,34,56],  fgRange:[50,12,34],
-    hexColors:["#4BE0FF","#E9FFE2","#C4E4FC","#E6D7FF","#FFC643"],
-    hexWeights:[38,20,12,8,22] },
-  { id:9,  name:"Prism",  bg:"#0e080e",
-    grad:"linear-gradient(135deg,hsl(280,32%,22%),hsl(300,38%,62%),hsl(0,0%,93%))",
-    fgBase:[288,30,56],  fgRange:[80,10,34],
-    hexColors:["#FFE2DA","#FFCDE4","#FF6C78","#C7FBFC","#EDFFCA","#FFE159"],
-    hexWeights:[18,22,28,8,16,8] },
-  { id:10, name:"Smog",   bg:"#0c0c0c",
-    grad:"linear-gradient(135deg,hsl(0,0%,18%),hsl(210,22%,52%),hsl(0,0%,90%))",
-    fgBase:[210,18,52],  fgRange:[30,8,32],
-    hexColors:["#CEEBF5","#69E14D","#E1FA4B","#BCF4FF","#CAFDFB","#FEF278"],
-    hexWeights:[18,28,18,14,12,10] },
-  { id:11, name:"Flare",  bg:"#100606",
-    grad:"linear-gradient(135deg,hsl(5,48%,24%),hsl(15,52%,54%),hsl(0,0%,90%))",
-    fgBase:[8,46,50],   fgRange:[20,10,30],
-    hexColors:["#FFC643","#FFE159","#E9FFE2","#E6D7FF","#C4E4FC","#4BE0FF"],
-    hexWeights:[28,22,15,14,12,9] },
-  // ── Vivid tartan (dark bg, 3-color palette) ──────────────────
-  { id:12, name:"Jan",    bg:"#000000",
-    grad:"linear-gradient(135deg,hsl(210,70%,72%),hsl(180,60%,78%),hsl(220,65%,68%))",
-    fgBase:[210,65,72],  fgRange:[30,0,14],
-    palette:[[210,65,72],[185,58,78],[225,60,66]], vivid:true },
-  { id:13, name:"Feb",    bg:"#050510",
-    grad:"linear-gradient(135deg,hsl(140,60%,72%),hsl(20,65%,78%),hsl(155,55%,68%))",
-    fgBase:[140,58,72],  fgRange:[20,0,14],
-    palette:[[140,58,72],[18,62,76],[150,52,68]], vivid:true },
-  { id:14, name:"Mar",    bg:"#080008",
-    grad:"linear-gradient(135deg,hsl(300,55%,82%),hsl(60,60%,84%),hsl(180,50%,86%))",
-    fgBase:[300,52,82],  fgRange:[20,0,10],
-    palette:[[300,52,82],[62,56,84],[178,48,86]], vivid:true },
-  { id:15, name:"Apr",    bg:"#0a0010",
-    grad:"linear-gradient(135deg,hsl(30,65%,80%),hsl(195,58%,78%),hsl(350,55%,82%))",
-    fgBase:[30,60,80],   fgRange:[20,0,12],
-    palette:[[30,60,80],[195,55,78],[348,52,82]], vivid:true },
-  { id:16, name:"May",    bg:"#000a08",
-    grad:"linear-gradient(135deg,hsl(160,62%,74%),hsl(270,58%,76%),hsl(40,60%,80%))",
-    fgBase:[160,58,74],  fgRange:[20,0,12],
-    palette:[[160,58,74],[268,55,76],[40,56,80]], vivid:true },
-  { id:17, name:"Jun",    bg:"#0a0800",
-    grad:"linear-gradient(135deg,hsl(40,70%,76%),hsl(10,65%,74%),hsl(300,58%,78%))",
-    fgBase:[30,62,76],   fgRange:[20,0,12],
-    palette:[[40,66,76],[10,62,74],[300,55,78]], vivid:true },
-  // ── Layers: same palettes, pattern split into 2-3 hard color bands ──
-  // ── Pantone: exact colors from Light radial formula ──────────
-  { id:18, name:"Chalk", bg:"#ffffff",
-    grad:"linear-gradient(135deg,hsl(35,6%,34%),hsl(35,5%,18%))",
-    fgBase:[35,6,24],   fgRange:[0,0,18],
-    palette:[[35,46,28],[35,43,32],[35,34,44],[35,18,63],[35,0,90]], vivid:true },
-  { id:19, name:"Coral", bg:"#ffffff",
-    grad:"linear-gradient(135deg,hsl(6,65%,58%),hsl(344,65%,64%))",
-    fgBase:[6,65,52],   fgRange:[38,0,10],
-    palette:[[6,100,28],[353,100,32],[339,93,44],[326,77,63],[313,55,90]], vivid:true },
-  { id:20, name:"Sky",   bg:"#ffffff",
-    grad:"linear-gradient(135deg,hsl(214,50%,56%),hsl(228,46%,62%))",
-    fgBase:[214,50,55], fgRange:[26,0,10],
-    palette:[[214,90,28],[205,87,32],[196,78,44],[187,62,63],[178,40,90]], vivid:true },
-  { id:21, name:"Sage",  bg:"#ffffff",
-    grad:"linear-gradient(135deg,hsl(142,40%,44%),hsl(158,38%,50%))",
-    fgBase:[142,40,44], fgRange:[30,0,10],
-    palette:[[142,80,28],[132,77,32],[121,68,44],[111,52,63],[100,30,90]], vivid:true },
-  { id:22, name:"Violet",bg:"#ffffff",
-    grad:"linear-gradient(135deg,hsl(275,48%,52%),hsl(325,48%,58%))",
-    fgBase:[275,48,50], fgRange:[50,0,10],
-    palette:[[275,88,28],[258,85,32],[240,76,44],[223,60,63],[205,38,90]], vivid:true },
-  { id:23, name:"Peach", bg:"#ffffff",
-    grad:"linear-gradient(135deg,hsl(24,55%,58%),hsl(52,55%,62%))",
-    fgBase:[24,55,54],  fgRange:[28,0,10],
-    palette:[[24,95,28],[14,92,32],[4,83,44],[355,67,63],[345,45,90]], vivid:true },
-];
-
-const COLOR_VAR_MODES = [
-  { id:1, label:"Noise"  },
-  { id:3, label:"Mix"    },
-  { id:5, label:"Radial" },
-];
-
-const DEFAULT_STATE = {
-  mode:0, p1:0.5, p2:0.5, p3:0.5, p4:0.5, p5:0.5,
-  pixelSize:6, spacing:0, shapeScale:1.0, pixelShapeType:0,
-  mixShapes:false, colorScheme:0, colorVar:1,
-  radialSym:false, radialRays:6, circleMask:true, animate:true, speed:0.02,
+const state = {
+  mode: 0,
+  tileSize: 22,
+  radius: 150,
+  softness: 0.24,
+  speed: 0.16,
+  bgColor: '#f2f2ee',
+  patternScale: 1.0,
+  density: 0.58,
+  pulse: 0.12,
+  rotate: 0.22,
+  ambient: 0.08,
+  radialRays: 6,
+  p1: 0.5,
+  p2: 0.5,
+  p3: 0.5,
+  p4: 0.5,
+  p5: 0.5,
+  cursorX: CANVAS_SIZE / 2,
+  cursorY: CANVAS_SIZE / 2,
+  pointerActive: false,
 };
 
-let state = { ...DEFAULT_STATE, seed: Math.floor(Math.random()*999999) };
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const dpr = window.devicePixelRatio || 1;
+canvas.width = CANVAS_SIZE * dpr;
+canvas.height = CANVAS_SIZE * dpr;
+ctx.scale(dpr, dpr);
+ctx.imageSmoothingEnabled = true;
 
-// ── UNDO HISTORY ──────────────────────────────────────────────
-const undoStack = [];
-const MAX_UNDO = 40;
-function pushUndo() {
-  undoStack.push(JSON.stringify(state));
-  if (undoStack.length > MAX_UNDO) undoStack.shift();
-  const btn = document.getElementById('btnUndo');
-  if (btn) btn.disabled = false;
-}
-function syncUI() {
-  for (let k=1;k<=5;k++) {
-    const el=document.getElementById(`p${k}`);
-    if(el) { el.value=state[`p${k}`]; document.getElementById(`p${k}Val`).textContent=parseFloat(state[`p${k}`]).toFixed(2); }
-    const lbl=document.getElementById(`p${k}Lbl`);
-    if(lbl) lbl.textContent=MODE_PARAMS[state.mode][k-1];
+const fileInput = document.getElementById('fileInput');
+const emptyState = document.getElementById('emptyState');
+
+let imageBitmap = null;
+let fittedImage = null;
+let cols = 0;
+let rows = 0;
+let tiles = [];
+let lastTime = performance.now();
+let motionTime = 0;
+let noiseSeed = Math.random() * 9999;
+
+function resizeGrid() {
+  cols = Math.ceil(CANVAS_SIZE / state.tileSize);
+  rows = Math.ceil(CANVAS_SIZE / state.tileSize);
+  const next = new Array(cols * rows);
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const idx = row * cols + col;
+      next[idx] = {
+        flip: tiles[idx] ? tiles[idx].flip : 0,
+        ambient: tiles[idx] ? (tiles[idx].ambient || 0) : 0,
+      };
+    }
   }
-  const ss=document.getElementById('shapeScale'); if(ss){ss.value=state.shapeScale; document.getElementById('shapeScaleVal').textContent=state.shapeScale.toFixed(2);}
-  const rr=document.getElementById('radialRays'); if(rr){rr.value=state.radialRays; document.getElementById('radialRaysVal').textContent=state.radialRays;}
-  const rs=document.getElementById('radialSym'); if(rs) rs.checked=state.radialSym;
-  const cm=document.getElementById('circleMask'); if(cm) cm.checked=state.circleMask;
-  const ms=document.getElementById('mixShapes'); if(ms) ms.checked=state.mixShapes;
-  const sp=document.getElementById('spacingToggle'); if(sp) sp.checked=state.spacing>0;
-  const lm=document.getElementById('lightMixToggle'); if(lm) lm.checked=state.colorVar===3;
-  document.querySelectorAll('.mode-btn').forEach((b,j)=>b.classList.toggle('active',j===state.mode));
-  document.querySelectorAll('.shape-btn').forEach((b,j)=>b.classList.toggle('active',SHAPES[j]?.id===state.pixelShapeType));
-  document.querySelectorAll('.color-swatch-wide').forEach(x=>x.classList.toggle('active',parseInt(x.dataset.schemeId)===state.colorScheme));
-  if(typeof updateSizeBtns==='function') updateSizeBtns();
+
+  tiles = next;
 }
 
-function applyUndo() {
-  if (!undoStack.length) return;
-  Object.assign(state, JSON.parse(undoStack.pop()));
-  syncUI();
-  const btn = document.getElementById('btnUndo');
-  if (btn) btn.disabled = undoStack.length === 0;
+function fitImageToCanvas(source) {
+  if (!source) {
+    fittedImage = null;
+    return;
+  }
+
+  const scale = Math.max(CANVAS_SIZE / source.width, CANVAS_SIZE / source.height);
+  const drawWidth = source.width * scale;
+  const drawHeight = source.height * scale;
+  const dx = (CANVAS_SIZE - drawWidth) / 2;
+  const dy = (CANVAS_SIZE - drawHeight) / 2;
+  fittedImage = { source, dx, dy, drawWidth, drawHeight };
 }
 
-// Wrap state-changing interactions to auto-push undo
-const _origInputHandler = (el, key, parse) => {
-  const prev = el.oninput;
-  el.oninput = function(e) {
-    pushUndo();
-    if (prev) prev.call(this, e);
-  };
-};
-let t = 0, colorT = 0, grid, gridRaw, layerDist, cols = 0, rows = 0, lastTime = 0;
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
 
-const canvas = document.getElementById('c');
-const ctx    = canvas.getContext('2d');
-ctx.imageSmoothingEnabled = false;
-const DPR = window.devicePixelRatio || 1;
-canvas.width  = CANVAS_SIZE * DPR;
-canvas.height = CANVAS_SIZE * DPR;
-ctx.scale(DPR, DPR);
+function smoothstep(edge0, edge1, x) {
+  const t = Math.max(0, Math.min(1, (x - edge0) / Math.max(0.0001, edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
 
-// ================================================================
-//  MATH HELPERS
-// ================================================================
-let _noiseSeed = 0;
-function setNoiseSeed(s) { _noiseSeed = s; }
-function _hash(x,y) {
-  const n = Math.sin(x*127.1 + y*311.7 + _noiseSeed*74.3) * 43758.5453;
+function easeFlip(value) {
+  return 0.5 - 0.5 * Math.cos(value * Math.PI);
+}
+
+function hash(x, y) {
+  const n = Math.sin(x * 127.1 + y * 311.7 + noiseSeed * 74.3) * 43758.5453;
   return n - Math.floor(n);
 }
-function _fade(f) { return f*f*f*(f*(f*6-15)+10); }
-function noise2(x,y) {
-  const ix=Math.floor(x), iy=Math.floor(y);
-  const fx=x-ix, fy=y-iy;
-  const ux=_fade(fx), uy=_fade(fy);
-  const a=_hash(ix,iy), b=_hash(ix+1,iy), c=_hash(ix,iy+1), d=_hash(ix+1,iy+1);
-  return (a+(b-a)*ux) + ((c+(d-c)*ux)-(a+(b-a)*ux))*uy;
+
+function fade(f) {
+  return f * f * f * (f * (f * 6 - 15) + 10);
 }
 
-let _rng = 0;
-function rngSeed(s) { _rng = s >>> 0; }
-function rng() {
-  _rng = (Math.imul(_rng, 1664525) + 1013904223) >>> 0;
-  return _rng / 0x100000000;
+function noise2(x, y) {
+  const ix = Math.floor(x);
+  const iy = Math.floor(y);
+  const fx = x - ix;
+  const fy = y - iy;
+  const ux = fade(fx);
+  const uy = fade(fy);
+  const a = hash(ix, iy);
+  const b = hash(ix + 1, iy);
+  const c = hash(ix, iy + 1);
+  const d = hash(ix + 1, iy + 1);
+  return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
 }
 
-// 4-octave Perlin noise
 function noiseP(x, y) {
-  let v = 0, amp = 1, freq = 1, max = 0;
+  let value = 0;
+  let amp = 1;
+  let freq = 1;
+  let max = 0;
   for (let o = 0; o < 4; o++) {
-    v   += noise2(x * freq, y * freq) * amp;
+    value += noise2(x * freq, y * freq) * amp;
     max += amp;
-    amp  *= 0.5;
-    freq *= 2.0;
+    amp *= 0.5;
+    freq *= 2;
   }
-  return v / max;
+  return value / max;
 }
 
-// Weighted hex color picker (nv = 0..1)
-// Smooth weighted color sample: nv=0..1 maps continuously across palette
-function hexSample(colors, weights, nv) {
-  const total = weights.reduce((a,b)=>a+b, 0);
-  const stops = [];
-  let acc = 0;
-  for (let i = 0; i < colors.length; i++) {
-    stops.push(acc / total);
-    acc += weights[i];
-  }
-  stops.push(1.0);
-  const t = Math.max(0, Math.min(0.9999, nv));
-  for (let i = 0; i < colors.length - 1; i++) {
-    if (t <= stops[i+1]) {
-      const seg = (t - stops[i]) / (stops[i+1] - stops[i]);
-      return hexLerp(colors[i], colors[i+1], seg);
-    }
-  }
-  return colors[colors.length - 1];
+function getAnimatedRadius() {
+  return state.radius * (1 + state.pulse * Math.sin(motionTime * 1.7));
 }
 
-// Linear interpolation between two hex colors (t = 0..1)
-function hexLerp(hex1, hex2, t) {
-  const parse = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
-  const [r1,g1,b1] = parse(hex1);
-  const [r2,g2,b2] = parse(hex2);
-  const r = Math.round(r1 + (r2-r1)*t);
-  const g = Math.round(g1 + (g2-g1)*t);
-  const b = Math.round(b1 + (b2-b1)*t);
-  return `rgb(${r},${g},${b})`;
+function getShapeRotation() {
+  return motionTime * state.rotate;
 }
 
-// ================================================================
-//  UI BUILD
-// ================================================================
-let updateSizeBtns = () => {};
-
-function buildUI() {
-  // Mode buttons
-  const mg = document.getElementById('modeGrid');
-  MODES.forEach((m,i) => {
-    const b = document.createElement('button');
-    b.className = 'mode-btn' + (i===state.mode?' active':'');
-    b.textContent = m.name;
-    b.onclick = () => setMode(i);
-    mg.appendChild(b);
-  });
-
-  // Param sliders
-  const pc = document.getElementById('params');
-  for (let i=1;i<=5;i++) {
-    const row = document.createElement('div'); row.className='param-row';
-    const lbl = document.createElement('span'); lbl.className='param-label';
-    lbl.id=`p${i}Lbl`; lbl.textContent=MODE_PARAMS[state.mode][i-1];
-    const sl  = document.createElement('input'); sl.type='range';
-    sl.min=0; sl.max=1; sl.step=0.01; sl.value=state[`p${i}`]; sl.id=`p${i}`;
-    const vl  = document.createElement('span'); vl.className='param-value';
-    vl.id=`p${i}Val`; vl.textContent=Number(state[`p${i}`]).toFixed(2);
-    sl.oninput = () => {
-      state[`p${i}`]=parseFloat(sl.value);
-      vl.textContent=parseFloat(sl.value).toFixed(2);
-    };
-    row.appendChild(lbl); row.appendChild(sl); row.appendChild(vl);
-    pc.appendChild(row);
-  }
-
-  // Size buttons
-  const SIZES = [{label:'xs',val:2},{label:'s',val:4},{label:'m',val:8},{label:'l',val:12},{label:'xl',val:20}];
-  const sbr = document.getElementById('sizeBtnRow');
-  updateSizeBtns = function() {
-    sbr.querySelectorAll('.size-btn').forEach(b => {
-      b.classList.toggle('active', parseInt(b.dataset.val) === state.pixelSize);
-    });
+function getPointerPosition(event) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = CANVAS_SIZE / rect.width;
+  const scaleY = CANVAS_SIZE / rect.height;
+  return {
+    x: (event.clientX - rect.left) * scaleX,
+    y: (event.clientY - rect.top) * scaleY,
   };
-  SIZES.forEach(sz => {
-    const b = document.createElement('button');
-    b.className = 'size-btn' + (sz.val === state.pixelSize ? ' active' : '');
-    b.textContent = sz.label; b.dataset.val = sz.val;
-    b.onclick = () => { state.pixelSize = sz.val; updateSizeBtns(); };
-    sbr.appendChild(b);
-  });
-
-  // Shape picker
-  const sg = document.getElementById('shapeGrid');
-  SHAPES.forEach((s,i) => {
-    const b=document.createElement('button');
-    b.className='shape-btn'+(s.id===state.pixelShapeType?' active':'');
-    b.textContent=s.sym; b.title=s.tip;
-    b.onclick = () => {
-      state.pixelShapeType=s.id;
-      document.querySelectorAll('.shape-btn').forEach((x,j)=>x.classList.toggle('active',j===i));
-    };
-    sg.appendChild(b);
-  });
-
-  // ── COLOR GRID ────────────────────────────────────────────────
-  function isLightScheme() {
-    const bg = COLOR_SCHEMES[state.colorScheme].bg;
-    return bg.startsWith('#f') || bg.startsWith('#e');
-  }
-  function isDarkScheme() { return !isLightScheme(); }
-
-  function selectScheme(id) {
-    state.colorScheme = id;
-    const light = isLightScheme();
-    // Dark always uses Mix (colorVar=3); Light defaults to Radial unless Mix toggle on
-    if (!light) {
-      state.colorVar = 3;
-    } else {
-      const mixOn = document.getElementById('lightMixToggle').checked;
-      state.colorVar = mixOn ? 3 : 5;
-      if (id === 0) state.colorVar = 1; // Chalk always Noise
-    }
-    document.querySelectorAll('.color-swatch-wide').forEach(x => x.classList.remove('active'));
-    document.querySelectorAll(`[data-scheme-id="${id}"]`).forEach(x => x.classList.add('active'));
-    // Mix toggle always visible, just affects light schemes
-    document.getElementById('mixToggleRow').style.display = '';
-  }
-
-  function buildWideSwatches(container, lightIds, darkIds) {
-    container.innerHTML = '';
-    const grid = document.createElement('div');
-    grid.className = 'color-grid-2col';
-
-    [['Light', lightIds], ['Dark', darkIds]].forEach(([label, ids]) => {
-      const col = document.createElement('div');
-      col.className = 'color-col';
-      const lbl = document.createElement('div');
-      lbl.className = 'color-col-label';
-      lbl.textContent = label;
-      col.appendChild(lbl);
-      ids.forEach(id => {
-        const cs = COLOR_SCHEMES[id];
-        const sw = document.createElement('div');
-        sw.className = 'color-swatch-wide' + (id === state.colorScheme ? ' active' : '');
-        sw.dataset.schemeId = id;
-        // Background: dark uses hex palette gradient, light uses cs.grad or bg
-        if (label === 'Dark' && cs.hexColors) {
-          const c = cs.hexColors;
-          sw.style.background = `linear-gradient(135deg,${c[0]},${c[Math.floor(c.length/2)]},${c[c.length-1]})`;
-        } else {
-          sw.style.background = cs.grad || cs.bg;
-        }
-        sw.onclick = () => selectScheme(id);
-        col.appendChild(sw);
-      });
-      grid.appendChild(col);
-    });
-    container.appendChild(grid);
-  }
-
-  // Build main grid (Light 0-5, Dark 6-11)
-  buildWideSwatches(document.getElementById('colorGrid'), [0,1,2,3,4,5], [6,9,8,10,11,7]);
-
-  // Mix toggle for light only
-  const lightMixToggle = document.getElementById('lightMixToggle');
-  lightMixToggle.onchange = () => {
-    if (isLightScheme() && state.colorScheme !== 0) {
-      state.colorVar = lightMixToggle.checked ? 3 : 5;
-    }
-  };
-  document.getElementById('mixToggleRow').style.display = '';
-
-  // Additional collapsible (Vivid + Pantone)
-  const additionalHeader = document.getElementById('additionalHeader');
-  const additionalBody   = document.getElementById('additionalBody');
-  additionalHeader.onclick = () => {
-    const arrow = additionalHeader.querySelector('.collapsible-arrow');
-    arrow.classList.toggle('open');
-    additionalBody.classList.toggle('open');
-  };
-  buildWideSwatches(document.getElementById('colorGridExtra'), [12,13,14,15,16,17], [18,19,20,21,22,23]);
-
-  function updateColorVarButtons() {} // kept for compat, logic now in selectScheme
-
-  // Wired sliders
-  function wire(id,key,parse,vid) {
-    const el=document.getElementById(id); if(!el) return;
-    el.oninput = () => {
-      state[key]=parse(el.value);
-      if(vid) document.getElementById(vid).textContent=
-        parseFloat(el.value).toFixed(String(el.step||'1').includes('.')?2:0);
-    };
-  }
-  wire('shapeScale','shapeScale', v=>parseFloat(v), 'shapeScaleVal');
-  wire('radialRays','radialRays', v=>parseInt(v),   'radialRaysVal');
-
-  // Undo
-  const btnUndo = document.getElementById('btnUndo');
-  btnUndo.disabled = true;
-  btnUndo.onclick = applyUndo;
-  document.addEventListener('keydown', e => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'z') { e.preventDefault(); applyUndo(); }
-  });
-
-  // Push undo on all param sliders
-  document.querySelectorAll('input[type=range]').forEach(el => {
-    el.addEventListener('mousedown', () => pushUndo());
-  });
-
-  // Push undo on mode/color/shape/size/toggle changes — wrap key buttons
-  const _wrapOnclick = (id) => {
-    const el = document.getElementById(id); if (!el) return;
-    const orig = el.onclick;
-    el.onclick = function(e) { pushUndo(); if (orig) orig.call(this, e); };
-  };
-  ['btnSeed','radialSym','circleMask','mixShapes','spacingToggle','lightMixToggle'].forEach(_wrapOnclick);
-  document.querySelectorAll('.mode-btn, .shape-btn, .size-btn, .color-swatch-wide').forEach(el => {
-    const orig = el.onclick;
-    el.onclick = function(e) { pushUndo(); if (orig) orig.call(this, e); };
-  });
-  const btnPlay = document.getElementById('btnPlayPause');
-  btnPlay.onclick = () => {
-    state.animate = !state.animate;
-    btnPlay.textContent = state.animate ? '⏸' : '▶';
-    const el = document.getElementById('animate');
-    if (el) el.checked = state.animate;
-  };
-
-  // Speed buttons
-  document.querySelectorAll('.speed-btn').forEach(b => {
-    b.onclick = () => {
-      state.speed = parseFloat(b.dataset.speed);
-      document.querySelectorAll('.speed-btn').forEach(x => x.classList.remove('active'));
-      b.classList.add('active');
-      const el = document.getElementById('speed');
-      if (el) el.value = state.speed;
-    };
-  });
-
-  document.getElementById('spacingToggle').onchange = e => { state.spacing = e.target.checked ? 2 : 0; };
-  document.getElementById('mixShapes').onchange=e=>state.mixShapes=e.target.checked;
-  document.getElementById('radialSym').onchange=e=>state.radialSym=e.target.checked;
-  document.getElementById('circleMask').onchange=e=>state.circleMask=e.target.checked;
-  document.getElementById('btnSeed').onclick   =()=>{ state.seed=Math.floor(Math.random()*999999); };
-  document.getElementById('btnReset').onclick  =resetParams;
-  document.getElementById('btnSave').onclick = () => {
-    // Always export at 2x resolution
-    const offscreen = document.createElement('canvas');
-    offscreen.width  = CANVAS_SIZE * 2;
-    offscreen.height = CANVAS_SIZE * 2;
-    const octx = offscreen.getContext('2d');
-    octx.imageSmoothingEnabled = false;
-    // Draw current canvas (already DPR-scaled) scaled to 2x output
-    octx.drawImage(canvas, 0, 0, CANVAS_SIZE * 2, CANVAS_SIZE * 2);
-    const a = document.createElement('a');
-    a.download = `pattern_${state.seed}@2x.png`;
-    a.href = offscreen.toDataURL('image/png');
-    a.click();
-  };
-
-  // SVG export: convert current canvas pixels to SVG rects
-  document.getElementById('btnSaveSvg').onclick = () => {
-    const ps   = state.pixelSize;
-    const sp   = state.spacing;
-    const cs   = COLOR_SCHEMES[state.colorScheme];
-    let rects  = '';
-    const zoom = state.shapeScale;
-    const gridCX = cols * ps / 2;
-    const gridCY = isDiamondMode() ? rows * ps / 2 - CANVAS_SIZE/4 : rows * ps / 2;
-    const offX   = CANVAS_SIZE/2 - gridCX/zoom;
-    const offY   = CANVAS_SIZE/2 - gridCY/zoom;
-    const circR  = CANVAS_SIZE / 2;
-
-    // Exact same inCircle logic as render (pre-zoom grid coords)
-    function svgInCircle(gx, gy) {
-      if (!state.radialSym || !state.circleMask) return true;
-      const cx = gx * ps, cy = gy * ps;
-      const dx = cx - gridCX, dy = cy - gridCY;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      if (dist > circR) return false;
-      const fadeStart = circR * 0.65;
-      if (dist > fadeStart) {
-        const tt = (dist - fadeStart) / (circR - fadeStart);
-        const keepProb = 1 - Math.pow(tt, 1.5);
-        if (noise2(cx * 0.05 + state.seed * 0.001, cy * 0.05) > keepProb) return false;
-      }
-      return true;
-    }
-
-    for (let gy=0; gy<rows; gy++) {
-      for (let gx=0; gx<cols; gx++) {
-        if (!grid[gy*cols+gx]) continue;
-        if (!svgInCircle(gx, gy)) continue;
-        const sx = offX + gx * ps / zoom;
-        const sy = offY + gy * ps / zoom;
-        const sw = (ps - sp) / zoom;
-        const color = getPixelColor(gx, gy, sx, sy);
-        const shape = state.mixShapes
-          ? SHAPES[Math.floor(noise2(gx*0.2+state.seed*0.0001, gy*0.2)*SHAPES.length)].id
-          : state.pixelShapeType;
-        if (shape === 1) {
-          const hx = sw/2, hy = sw/2;
-          rects += `<polygon points="${sx+hx},${sy} ${sx+sw},${sy+hy} ${sx+hx},${sy+sw} ${sx},${sy+hy}" fill="${color}"/>`;
-        } else if (shape === 2) {
-          rects += `<circle cx="${sx+sw/2}" cy="${sy+sw/2}" r="${sw/2}" fill="${color}"/>`;
-        } else if (shape === 3) {
-          const t3=sw/3;
-          rects += `<rect x="${sx+t3}" y="${sy}" width="${t3}" height="${sw}" fill="${color}"/>`;
-          rects += `<rect x="${sx}" y="${sy+t3}" width="${sw}" height="${t3}" fill="${color}"/>`;
-        } else {
-          rects += `<rect x="${sx}" y="${sy}" width="${sw}" height="${sw}" fill="${color}"/>`;
-        }
-      }
-    }
-
-    // Add SVG clipPath circle for clean edge
-    const clipId = state.radialSym ? `<defs><clipPath id="circ"><circle cx="${CANVAS_SIZE/2}" cy="${CANVAS_SIZE/2}" r="${circR}"/></clipPath></defs>` : '';
-    const clipAttr = state.radialSym ? ` clip-path="url(#circ)"` : '';
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${CANVAS_SIZE}" height="${CANVAS_SIZE}">
-${clipId}
-<rect width="${CANVAS_SIZE}" height="${CANVAS_SIZE}" fill="${cs.bg}"/>
-<g${clipAttr}>${rects}</g>
-</svg>`;
-    const a = document.createElement('a');
-    a.download = `pattern_${state.seed}.svg`;
-    a.href = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-    a.click();
-  };
-
-  // MP4 export: record 5 seconds via MediaRecorder
-  let mediaRec = null, recChunks = [];
-  const btnMp4 = document.getElementById('btnRecMp4');
-  btnMp4.onclick = () => {
-    if (mediaRec && mediaRec.state === 'recording') {
-      mediaRec.stop();
-      return;
-    }
-    recChunks = [];
-    const stream = canvas.captureStream(30);
-    const mime   = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(m=>MediaRecorder.isTypeSupported(m)) || 'video/webm';
-    mediaRec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 8_000_000 });
-    mediaRec.ondataavailable = e => { if(e.data.size>0) recChunks.push(e.data); };
-    mediaRec.onstop = () => {
-      const blob = new Blob(recChunks, { type: mime });
-      const a    = document.createElement('a');
-      // Save as webm (widely supported; rename to .mp4 or convert if needed)
-      a.download = `pattern_${state.seed}.webm`;
-      a.href     = URL.createObjectURL(blob);
-      a.click();
-      btnMp4.textContent = '● MP4';
-      btnMp4.style.background = '';
-    };
-    mediaRec.start();
-    btnMp4.textContent = '■ Stop';
-    btnMp4.style.background = '#c0392b';
-    // Auto-stop after 10 seconds
-    setTimeout(() => { if (mediaRec.state==='recording') mediaRec.stop(); }, 10000);
-  };
-
-  // ── PRESETS ──────────────────────────────────────────────────
-  let presets = [];
-  const presetGrid = document.getElementById('preset-grid');
-
-  function captureThumb() {
-    const thumb = document.createElement('canvas');
-    thumb.width = thumb.height = 88;
-    const tc = thumb.getContext('2d');
-    tc.imageSmoothingEnabled = true;
-    tc.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, 88, 88);
-    return thumb.toDataURL();
-  }
-
-  function loadPreset(i) {
-    Object.assign(state, JSON.parse(JSON.stringify(presets[i].state)));
-    for (let k=1;k<=5;k++) {
-      const el=document.getElementById(`p${k}`);
-      if(el) { el.value=state[`p${k}`]; document.getElementById(`p${k}Val`).textContent=parseFloat(state[`p${k}`]).toFixed(2); }
-    }
-    document.getElementById('radialSym').checked = state.radialSym;
-    document.getElementById('circleMask').checked = state.circleMask;
-    document.getElementById('mixShapes').checked = state.mixShapes;
-    document.getElementById('spacingToggle').checked = state.spacing > 0;
-    document.getElementById('shapeScale').value = state.shapeScale;
-    document.getElementById('shapeScaleVal').textContent = state.shapeScale.toFixed(2);
-    document.getElementById('radialRays').value = state.radialRays;
-    document.getElementById('radialRaysVal').textContent = state.radialRays;
-    document.querySelectorAll('.mode-btn').forEach((b,j) => b.classList.toggle('active', j === state.mode));
-    document.querySelectorAll('.shape-btn').forEach((b,j) => b.classList.toggle('active', SHAPES[j]?.id === state.pixelShapeType));
-    document.querySelectorAll('.color-swatch-wide').forEach(x => x.classList.toggle('active', parseInt(x.dataset.schemeId) === state.colorScheme));
-    if (typeof updateSizeBtns === 'function') updateSizeBtns();
-    for(let k=1;k<=5;k++) { const el=document.getElementById(`p${k}Lbl`); if(el) el.textContent=MODE_PARAMS[state.mode][k-1]; }
-  }
-
-  function renderPresets() {
-    presetGrid.innerHTML = '';
-    presets.forEach((p, i) => {
-      const slot = document.createElement('div');
-      slot.className = 'preset-slot filled';
-      const img = document.createElement('img');
-      img.src = p.thumb;
-      slot.appendChild(img);
-      const del = document.createElement('span');
-      del.className = 'preset-del'; del.textContent = '✕';
-      del.onclick = e => { e.stopPropagation(); presets.splice(i, 1); renderPresets(); };
-      slot.appendChild(del);
-      slot.onclick = () => loadPreset(i);
-      presetGrid.appendChild(slot);
-    });
-    // Add button at bottom
-    const add = document.createElement('div');
-    add.className = 'preset-slot';
-    const plus = document.createElement('span');
-    plus.className = 'plus'; plus.textContent = '+';
-    add.appendChild(plus);
-    add.onclick = () => {
-      requestAnimationFrame(() => {
-        presets.push({ state: JSON.parse(JSON.stringify(state)), thumb: captureThumb() });
-        renderPresets();
-      });
-    };
-    presetGrid.appendChild(add);
-  }
-  renderPresets();
-
-  updateModeName();
 }
 
-function setMode(i) {
-  state.mode=i;
-  document.querySelectorAll('.mode-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
-  for(let k=1;k<=5;k++) {
-    const el=document.getElementById(`p${k}Lbl`);
-    if(el) el.textContent=MODE_PARAMS[i][k-1];
-  }
-  updateModeName();
+function updateCursor(event) {
+  const pos = getPointerPosition(event);
+  state.cursorX = pos.x;
+  state.cursorY = pos.y;
+  state.pointerActive = true;
 }
 
-function updateModeName() {}
-
-function resetParams() {
-  ['p1','p2','p3','p4','p5','spacing','shapeScale','speed','radialRays'].forEach(k=>{
-    state[k]=DEFAULT_STATE[k];
-    const el=document.getElementById(k);
-    if(el) el.value=state[k];
-    const vl=document.getElementById(k+'Val');
-    if(vl) vl.textContent=Number(state[k]).toFixed(
-      String(el?.step||'1').includes('.')?2:0);
-  });
-  state.pixelSize=DEFAULT_STATE.pixelSize;
-  if(typeof updateSizeBtns==='function') updateSizeBtns();
-  state.radialSym=DEFAULT_STATE.radialSym; document.getElementById('radialSym').checked=state.radialSym;
-  state.circleMask=DEFAULT_STATE.circleMask; document.getElementById('circleMask').checked=state.circleMask;
-  state.mixShapes=DEFAULT_STATE.mixShapes; document.getElementById('mixShapes').checked=state.mixShapes;
-  state.animate  =DEFAULT_STATE.animate;
-  const btnPlay2 = document.getElementById('btnPlayPause');
-  if (btnPlay2) btnPlay2.textContent = state.animate ? '⏸' : '▶';
-  state.speed = DEFAULT_STATE.speed;
-  document.querySelectorAll('.speed-btn').forEach(b => {
-    b.classList.toggle('active', parseFloat(b.dataset.speed) === state.speed);
-  });
+function clearCursor() {
+  state.pointerActive = false;
 }
 
-// ================================================================
-//  GRID
-// ================================================================
-// diamondMode: when shape=diamond, we use a denser row grid (step=ps/2 vertically)
-function isDiamondMode() {
-  return !state.mixShapes && state.pixelShapeType === 1;
-}
-
-function updateGrid() {
-  const ps = state.pixelSize;
-  const scale = state.radialSym ? Math.max(1, state.shapeScale) : 1;
-  cols = Math.max(1, Math.ceil(CANVAS_SIZE / ps * scale));
-  rows = Math.max(1, Math.ceil(CANVAS_SIZE / ps * scale));
-  grid    = new Uint8Array(cols * rows);   // 0/1 on-off
-  gridRaw = new Float32Array(cols * rows); // 0..1 raw value for vivid coloring
-}
-
-function setCell(x, y, on, raw) {
-  if (x>=0 && x<cols && y>=0 && y<rows) {
-    grid[y*cols+x]    = on ? 1 : 0;
-    gridRaw[y*cols+x] = raw !== undefined ? raw : (on ? 1 : 0);
-  }
-}
-
-function isVivid() { return COLOR_SCHEMES[state.colorScheme].id >= 12; }
-
-function applySymmetry(x, y, val, rawVal) {
-  const raw = rawVal !== undefined ? rawVal : (val ? 1 : 0);
-  if (state.radialSym) {
-    const cx=cols/2, cy=rows/2;
-    for (let i=0; i<state.radialRays; i++) {
-      const a=(Math.PI*2/state.radialRays)*i;
-      const c=Math.cos(a), s=Math.sin(a);
-      const dx=x-cx, dy=y-cy;
-      setCell(Math.round(cx+dx*c-dy*s), Math.round(cy+dx*s+dy*c), val, raw);
-    }
-  } else {
-    setCell(x,        y,        val, raw);
-    setCell(cols-1-x, y,        val, raw);
-    setCell(x,        rows-1-y, val, raw);
-    setCell(cols-1-x, rows-1-y, val, raw);
-  }
-}
-
-// ================================================================
-//  PATTERN GENERATORS — polar coordinates, symmetry via foldAng
-// ================================================================
-
-function polar(x, y) {
-  const cx = cols/2, cy = rows/2;
-  const dx = x - cx, dy = y - cy;
-  const r   = Math.sqrt(dx*dx + dy*dy) / (Math.min(cols, rows) * 0.5);
-  const ang = Math.atan2(dy, dx);
-  return [r, ang];
-}
-
-// Fold angle into [0, PI/rays] for built-in rotational symmetry
 function foldAng(ang, rays) {
   const step = Math.PI / rays;
-  const a = ((ang % (step*2)) + step*2) % (step*2);
-  return a < step ? a : step*2 - a;
+  const a = ((ang % (step * 2)) + step * 2) % (step * 2);
+  return a < step ? a : step * 2 - a;
 }
 
-function generateNoiseLines() {
-  const scale  = 0.03 + state.p1*0.06;
-  const thick  = 0.015 + state.p2*0.06;
-  const layers = 1 + Math.floor(state.p3*3);
-  const rays   = Math.max(1, state.radialRays);
-  if (state.radialSym) {
-    for (let x=0; x<cols; x++) for (let y=0; y<rows; y++) {
-      const [r, ang] = polar(x, y);
-      const fa = foldAng(ang, rays);
-      let on=0, raw=0;
-      for (let l=0; l<layers; l++) {
-        const n = noiseP(r*scale*(1+l*0.5)*60 + t*state.p5, fa*scale*(1+l*0.5)*60 + t*state.p4);
-        const d = Math.abs(n - Math.floor(n*6.0)/6.0);
-        if (d < thick) { on=1; raw=Math.max(raw, 1-d/thick); }
-      }
-      setCell(x, y, on, raw);
+function getModePattern(normalized, angle, time) {
+  const sc = state.patternScale;
+  const density = state.density;
+  const r = normalized;
+  const rays = Math.max(3, state.radialRays);
+  const folded = foldAng(angle, rays);
+
+  if (state.mode === 0) {
+    const scale = (0.45 + state.p1 * 1.1) * sc;
+    const thick = 0.04 + state.p2 * 0.22;
+    const layers = 1 + Math.floor(state.p3 * 3);
+    let best = 0;
+    for (let l = 0; l < layers; l++) {
+      const layerScale = 1 + l * 0.45;
+      const n = noiseP(
+        r * 16 * scale * layerScale + time * (0.1 + state.p5 * 0.7),
+        folded * 10 * scale * (1 + l * 0.3) + time * (0.1 + state.p4 * 0.7)
+      );
+      const d = Math.abs(n - Math.floor(n * 6) / 6);
+      best = Math.max(best, 1 - smoothstep(0, thick, d));
     }
-  } else {
-    for (let x=0; x<cols/2; x++) for (let y=0; y<rows/2; y++) {
-      let on=0, raw=0;
-      for (let l=0; l<layers; l++) {
-        const n = noiseP(x*scale*(1+l*0.5)+t*state.p5, y*scale*(1+l*0.5)+t*state.p4);
-        const d = Math.abs(n - Math.floor(n*6.0)/6.0);
-        if (d < thick) { on=1; raw=Math.max(raw, 1-d/thick); }
-      }
-      applySymmetry(x, y, on, raw);
-    }
+    return best * (0.6 + (1 - normalized) * 0.4);
   }
+
+  if (state.mode === 1) {
+    const freq1 = 0.7 + 2.8 * state.p1;
+    const freq2 = 0.5 + 2.0 * state.p2;
+    const amp1 = 0.25 + 1.5 * state.p3;
+    const amp2 = 0.2 + 1.2 * state.p4;
+    const thresh = 0.1 + 0.85 * state.p5;
+    const rr = r * 18 * sc;
+    const l1 = Math.sin(rr * freq1 + Math.cos(angle * rays) * amp1 + time * 1.0);
+    const l2 = Math.cos(rr * freq2 + Math.sin(angle * rays) * amp2 + time * 0.75);
+    const l3 = Math.sin(r * 28 + time * 0.5);
+    const v = Math.abs((l1 + l2 + l3) / 3);
+    return smoothstep(thresh * density * 0.6, 1, v);
+  }
+
+  if (state.mode === 2) {
+    const scale = (0.7 + state.p1 * 1.2) * sc;
+    const twist = state.p2 * Math.PI * 2;
+    const n1 = noiseP(r * 18 * scale + time * (0.1 + state.p3 * 0.9), folded * 7 * scale + time * 0.28);
+    const n2 = noiseP(r * 36 * scale + time * 0.24, folded * (10 + state.p5 * 10) * scale - time * (0.1 + state.p4 * 0.9));
+    const v = Math.sin(n1 * Math.PI * 4 + twist + angle * 1.2) * Math.cos(n2 * Math.PI * 4);
+    return smoothstep(density * 0.4, 1, (v + 1) * 0.5);
+  }
+
+  if (state.mode === 3) {
+    const radial1 = 6 + state.p1 * 18;
+    const twist = 1 + state.p2 * 8;
+    const rings = 2 + state.p3 * 10;
+    const dens = 1 + state.p4 * 6;
+    const speed = 0.2 + state.p5 * 1.5;
+    const v1 = Math.sin(r * radial1 * sc * rings + time * speed);
+    const v2 = Math.cos(r * (4 + twist * 2) * sc - time * speed * 0.7);
+    const v3 = Math.sin(angle * rays + time * 0.4);
+    const val = (v1 + v2 + v3 + 3) / 6;
+    const ringMask = smoothstep((density * dens) * 0.2, 1, val);
+    const petals = 0.5 + 0.5 * Math.cos(angle * rays + twist) * (1 - r * 0.55);
+    return ringMask * (0.4 + petals * 0.6);
+  }
+
+  if (state.mode === 4) {
+    const scale = (0.8 + state.p1 * 1.1) * sc;
+    const sharpness = state.p2;
+    const px = r * 24 * scale;
+    const py = folded * 8 * scale;
+    const warp = noise2(px * 0.35 + time * 0.1, py * 0.35 + time * 0.08) * 1.8;
+    const n1 = Math.sin((px + warp + time * (0.15 + state.p4 * 0.9)) * Math.PI * 1.5);
+    const n2 = Math.sin((py + warp * 0.7 - time * (0.15 + state.p3 * 0.9)) * Math.PI * 2.1);
+    const n3 = Math.sin((px + py) * (0.6 + state.p5 * 0.8) * Math.PI + warp * 0.5 + time * 0.4);
+    const v = (n1 + n2 + n3 + 3) / 6;
+    return smoothstep((density * 0.4) + sharpness * 0.3, 1, v);
+  }
+
+  const f1 = 0.5 + state.p1 * 2.0;
+  const f2 = 0.4 + state.p2 * 1.8;
+  const f3 = 0.35 + state.p3 * 1.5;
+  const dens = 0.3 + state.p4 * 0.9;
+  const bands = 2 + state.p5 * 6;
+  const p = (
+    Math.sin(r * 24 * sc * f1 + time * 0.3) +
+    Math.sin(angle * 18 * sc * f2 + time * 0.18) +
+    Math.sin((r * 14 + angle * 8) * sc * f3 + time * 0.15) +
+    Math.sin(r * 10 - time * 0.25)
+  ) / 4;
+  const v = Math.abs(Math.sin(p * Math.PI * bands));
+  return smoothstep(dens * density * 0.45, 1, v);
 }
 
-function generateCyberWaves() {
-  const freq1   = 0.08 + 0.15*state.p1;
-  const freq2   = 0.05 + 0.10*state.p2;
-  const amp1    = 0.5  + 0.5 *state.p3;
-  const amp2    = 0.3  + 0.7 *state.p4;
-  const density = 0.3  + 0.2 *state.p5;
-  const rays    = Math.max(2, state.radialRays);
-  if (state.radialSym) {
-    for (let x=0; x<cols; x++) for (let y=0; y<rows; y++) {
-      const [r, ang] = polar(x, y);
-      const rr = r * cols * 0.5;
-      const l1 = Math.sin(rr*freq1 + Math.cos(ang*rays)*amp1 + t*1.0);
-      const l2 = Math.cos(rr*freq2 + Math.sin(ang*rays)*amp2 + t*0.75);
-      const l3 = Math.sin(r*20 + t*0.5);
-      const v  = (l1+l2+l3)/3;
-      setCell(x, y, Math.abs(v) > density ? 1 : 0, Math.abs(v));
-    }
-  } else {
-    const cx = cols/4, cy = rows/4;
-    for (let x=0; x<cols/2; x++) for (let y=0; y<rows/2; y++) {
-      const dx = x-cx, dy = y-cy;
-      const rr = Math.sqrt(dx*dx+dy*dy);
-      const ang = Math.atan2(dy, dx);
-      const l1 = Math.sin(rr*freq1 + Math.cos(ang*rays)*amp1 + t*1.0);
-      const l2 = Math.cos(rr*freq2 + Math.sin(ang*rays)*amp2 + t*0.75);
-      const l3 = Math.sin(dx*dy*0.03 + t*0.5);
-      const v  = (l1+l2+l3)/3;
-      applySymmetry(x, y, Math.abs(v) > density ? 1 : 0, Math.abs(v));
-    }
-  }
+function getRevealStrength(dx, dy) {
+  const radius = Math.max(1, getAnimatedRadius());
+  const rotation = getShapeRotation();
+  const rotatedX = dx * Math.cos(-rotation) - dy * Math.sin(-rotation);
+  const rotatedY = dx * Math.sin(-rotation) + dy * Math.cos(-rotation);
+  const dist = Math.sqrt(rotatedX * rotatedX + rotatedY * rotatedY);
+  if (dist >= radius) return 0;
+
+  const normalized = dist / radius;
+  const angle = Math.atan2(rotatedY, rotatedX);
+  const inner = 1 - state.softness;
+  const radialEnvelope = 1 - smoothstep(inner, 1, normalized);
+  const pattern = getModePattern(normalized, angle, motionTime);
+  const centerBias = 1 - smoothstep(0.82, 1, normalized);
+
+  return Math.max(0, Math.min(1, pattern * radialEnvelope * 0.78 + centerBias * 0.22));
 }
 
-function generateBiomorph() {
-  const scale = 0.03 + 0.04*state.p1;
-  const twist = state.p2 * Math.PI*2;
-  const rays  = Math.max(1, state.radialRays);
-  if (state.radialSym) {
-    for (let x=0; x<cols; x++) for (let y=0; y<rows; y++) {
-      const [r, ang] = polar(x, y);
-      const fa = foldAng(ang, rays);
-      const n  = noiseP(r*60*scale + t*state.p3, fa*60*scale + t*state.p4);
-      const n2 = noiseP(r*60*scale*2.0 + t*state.p2, fa*60*scale*2.0 + t*state.p5);
-      const v  = Math.sin(n*Math.PI*4+twist) * Math.cos(n2*Math.PI*4);
-      setCell(x, y, v>0.4?1:0, (v+1)/2);
-    }
-  } else {
-    for (let x=0; x<cols/2; x++) for (let y=0; y<rows/2; y++) {
-      const n  = noiseP(x*scale+t*state.p3, y*scale+t*state.p4);
-      const n2 = noiseP(x*scale*2.0+t*state.p2, y*scale*2.0+t*state.p5);
-      const v  = Math.sin(n*Math.PI*4+twist) * Math.cos(n2*Math.PI*4);
-      applySymmetry(x, y, v>0.4?1:0, (v+1)/2);
-    }
-  }
-}
-
-function generateMandala() {
-  const cx     = cols / 2, cy = rows / 2;
-  const radial1 = 0.05 + state.p1 * (0.25 - 0.05);
-  const radial2 = 0.03 + state.p2 * (0.15 - 0.03);
-  const waves1  = 2    + state.p3 * (10 - 2);
-  const waves2  = 1    + state.p4 * (6  - 1);
-  const speed1  = 0.2  + state.p5 * (1.5 - 0.2);
-  const rays    = state.radialRays;
-
-  for (let x = 0; x < cols; x++) for (let y = 0; y < rows; y++) {
-    const dx  = x - cx;
-    const dy  = y - cy;
-    const r   = Math.sqrt(dx*dx + dy*dy);
-    const ang = Math.atan2(dy, dx);
-    const v1  = Math.sin(r * radial1 * waves1 + t * speed1);
-    const v2  = Math.cos(r * radial2 * waves2 - t * speed1 * 0.7);
-    const v3  = Math.sin(ang * rays + t * 0.5);
-    const val = v1 + v2 + v3;
-    setCell(x, y, val > 1.0 ? 1 : 0, (val + 3) / 6);
-  }
-}
-
-function generateCrystal() {
-  const sc    = 0.06 + state.p1 * 0.10;
-  const rays  = Math.max(1, state.radialRays);
-
-  if (state.radialSym) {
-    for (let x=0; x<cols; x++) for (let y=0; y<rows; y++) {
-      const [r, ang] = polar(x, y);
-      const fa = foldAng(ang, rays);
-      const px = r * 60 * sc, py = fa * 60 * sc;
-      // Noise warps the coordinates for organic distortion
-      const warp = noise2(px * 0.3 + state.seed * 0.001, py * 0.3 + state.seed * 0.002) * 1.8;
-      const n1 = Math.sin((px + warp + t * state.p3) * Math.PI * 2);
-      const n2 = Math.sin((py + warp * 0.7 + t * state.p4) * Math.PI * 2);
-      const n3 = Math.sin((px + py) * 0.7 * Math.PI * 2 + warp * 0.5 + t * state.p5);
-      const v  = (n1 + n2 + n3) / 3;
-      setCell(x, y, v > (0.2 - state.p2 * 0.4) ? 1 : 0, (v + 1) / 2);
-    }
-  } else {
-    for (let x=0; x<cols/2; x++) for (let y=0; y<rows/2; y++) {
-      const nx = x * sc, ny = y * sc;
-      const warp = noise2(nx * 0.4 + state.seed * 0.001, ny * 0.4 + state.seed * 0.002) * 1.6;
-      const n1 = Math.sin((nx + warp + t * state.p4) * Math.PI * 2);
-      const n2 = Math.sin((ny + warp * 0.7 + t * state.p3) * Math.PI * 2);
-      const n3 = Math.sin((nx + ny) * 0.7 * Math.PI * 2 + warp * 0.5 + t * state.p5);
-      const n4 = Math.sin((nx - ny) * 0.5 * Math.PI * 2 + warp * 0.3 + t * state.p5 * 0.7);
-      const v  = (n1 + n2 + n3 + n4) / 4;
-      applySymmetry(x, y, v > (0.2 - state.p2 * 0.4) ? 1 : 0, (v + 1) / 2);
-    }
-  }
-}
-
-function generatePlasma() {
-  const f1      = 0.08 + state.p1*0.12;
-  const f2      = 0.06 + state.p2*0.10;
-  const f3      = 0.05 + state.p3*0.08;
-  const density = 0.50 + state.p4*0.45;
-  const bands   = 2    + state.p5*5;
-  const rays    = Math.max(1, state.radialRays);
-  if (state.radialSym) {
-    for (let x=0; x<cols; x++) for (let y=0; y<rows; y++) {
-      const [r, ang] = polar(x, y);
-      const fa = foldAng(ang, rays);
-      const rr = r * cols * 0.5;
-      // Sinusoidal interference
-      const p  = (Math.sin(rr*f1 + t*0.3)
-                + Math.sin(fa*40*f2 + t*0.2)
-                + Math.sin((rr+fa*20)*f3 + t*0.15)
-                + Math.sin(rr*0.07 - t*0.25)) / 4;
-      const v  = Math.abs(Math.sin(p*Math.PI*bands));
-      setCell(x, y, v>density?1:0, v);
-    }
-  } else {
-    for (let x=0; x<cols/2; x++) for (let y=0; y<rows/2; y++) {
-      const dx = x-cols/4, dy = y-rows/4;
-      const rr = Math.sqrt(dx*dx+dy*dy);
-      // Classic plasma: sinusoidal interference grid
-      const p  = (Math.sin(x*f1 + t*0.3)
-                + Math.sin(y*f2 + t*0.2)
-                + Math.sin((x+y)*f3 + t*0.15)
-                + Math.sin(rr*0.07 - t*0.25)) / 4;
-      const v  = Math.abs(Math.sin(p*Math.PI*bands));
-      applySymmetry(x, y, v>density?1:0, v);
-    }
-  }
-}
-
-const GENERATORS = {
-  noiseLines:generateNoiseLines, cyberWaves:generateCyberWaves,
-  biomorph:generateBiomorph,     mandala:generateMandala,
-  crystal:generateCrystal,       plasma:generatePlasma,
-};
-
-// ================================================================
-//  COLOR
-// ================================================================
-function getPixelColor(x, y, screenX, screenY) {
-  const cs=COLOR_SCHEMES[state.colorScheme];
-  const [bh,bs,bl]=cs.fgBase;
-  const [rh,,rl]=cs.fgRange;
-
-  // Vivid (raw-mapped) and Layers (hard bands) schemes
-  if (cs.vivid || cs.layers) {
-    const pal = cs.palette;
-    const n = pal.length;
-    let idx;
-    if (cs.layers) {
-      const d = layerDist ? layerDist[y*cols+x] : 0;
-      const zoneSize = Math.max(2, Math.round(cols * 0.08));
-      idx = Math.min(n-1, Math.floor(d / zoneSize));
-    } else {
-      const raw = gridRaw[y * cols + x];
-      idx = Math.min(n-1, Math.floor(raw * n));
-    }
-    const [ph, ps2, pl] = pal[idx];
-    return `hsl(${ph},${ps2}%,${pl}%)`;
-  }
-
-  // Dark hex palette schemes (id 6-11)
-  if (cs.hexColors) {
-    // noiseP (4 octaves) gives organic smooth gradients without hard edges
-    // ns ~0.015 at cols=80 → broad flowing zones, no sharp boundaries
-    const ns = 0.025 * (80 / cols);
-
-    // Three independent noise fields at very different scales for organic distribution
-    const nv1 = noiseP(x * ns + state.seed * 0.0001, y * ns + state.seed * 0.0002);
-    const nv2 = noiseP(x * ns * 3.1 + state.seed * 0.0007 + 71.3, y * ns * 2.3 + state.seed * 0.0004 + 43.7);
-    const nv3 = noiseP(x * ns * 0.4 + state.seed * 0.0003 + 19.1, y * ns * 0.5 + state.seed * 0.0006 + 83.2);
-    const nv = (nv1 * 0.5 + nv2 * 0.3 + nv3 * 0.2);
-
-    // Noise mode: smooth flowing gradient across palette
-    if (state.colorVar === 1) {
-      return hexSample(cs.hexColors, cs.hexWeights, nv);
-    }
-
-    // Radial mode: gradient from center outward, softened with noise
-    if (state.colorVar === 5) {
-      const dx = (x - cols/2) / (cols/2);
-      const dy = (y - rows/2) / (rows/2);
-      const dist = Math.min(1, Math.sqrt(dx*dx + dy*dy));
-      const distNoisy = Math.max(0, Math.min(0.9999, dist * 0.75 + nv * 0.25));
-      const colors = cs.hexColors;
-      const ti = distNoisy * (colors.length - 1);
-      const i0 = Math.floor(ti), i1 = Math.min(colors.length - 1, i0 + 1);
-      return hexLerp(colors[i0], colors[i1], ti - i0);
-    }
-
-    // Mix mode (colorVar === 3): base noise gradient + random pixel pops from palette
-    if (state.colorVar === 3) {
-      const baseColor = hexSample(cs.hexColors, cs.hexWeights, nv);
-      // High-freq noise for scattered pixel pops
-      const popN = noise2(x * 1.3 + state.seed * 0.0011 + 53.1,
-                          y * 1.3 + state.seed * 0.0019 + 37.4);
-      if (popN > 0.82) {
-        // Pick a random color from palette using a different noise field
-        const pickN = noise2(x * 2.7 + state.seed * 0.0031 + 11.3,
-                             y * 2.7 + state.seed * 0.0023 + 91.7);
-        const pickIdx = Math.floor(pickN * cs.hexColors.length);
-        const popColor = cs.hexColors[Math.min(cs.hexColors.length - 1, pickIdx)];
-        return popColor;
-      }
-      return baseColor;
-    }
-  }
-
-  // Noise mode: wide slow gradient that drifts gently with time
-  if(state.colorVar===1 || rh===0) {
-    if(rh===0) return `hsl(${bh},${bs}%,${bl}%)`;
-    const nv  = noise2(x*0.03 + colorT, y*0.03 + colorT*0.7);
-    const nv2 = noise2(x*0.025 + 5 + colorT*0.5, y*0.025 + colorT*0.3);
-    const hOff = (nv -0.5)*2*rh;
-    const lOff = (nv2-0.5)*2*rl;
-    const h = ((bh+hOff)%360+360)%360;
-    const lMin = rl > 25 ? 12 : 10;
-    const l = Math.max(lMin, Math.min(95, bl+lOff));
-    const sFactor = rl > 25 ? Math.max(0.1, (l - lMin) / 45) : 1;
-    const s = Math.round(bs * Math.min(1, sFactor));
-    return `hsl(${h|0},${s}%,${l|0}%)`;
-  }
-
-  // Radial mode: X-axis and Y-axis each carry a different hue,
-  // they blend multiplicatively from center outward like Color Space painting
-  if (state.colorVar === 5) {
-    const dx = (x - cols/2) / (cols/2);
-    const dy = (y - rows/2) / (rows/2);
-    const dist  = Math.min(1, Math.sqrt(dx*dx + dy*dy));
-    const dist2 = dist * dist;
-    const isLight = COLOR_SCHEMES[state.colorScheme].bg.startsWith('#f') ||
-                    COLOR_SCHEMES[state.colorScheme].bg.startsWith('#e');
-    const h = ((bh - rh * dist * 1.4) % 360 + 360) % 360;
-    let l, s;
-    if (isLight) {
-      // High contrast: deep center, near-white edges
-      l = 28 + dist2 * 62;
-      s = Math.min(100, bs + 40 - dist2 * 50);
-    } else {
-      // Dark theme: softer radial, stays in pastel range
-      l = 55 + dist2 * 22;
-      s = Math.min(100, bs + 15 - dist2 * 20);
-    }
-    return `hsl(${h|0},${s|0}%,${l|0}%)`;
-  }
-
-
-  const isLightMix = COLOR_SCHEMES[state.colorScheme].bg.startsWith('#f') ||
-                     COLOR_SCHEMES[state.colorScheme].bg.startsWith('#e');
-  if (isLightMix) {
-    // Base: same as Radial mode
-    const dx = (x - cols/2) / (cols/2);
-    const dy = (y - rows/2) / (rows/2);
-    const dist  = Math.min(1, Math.sqrt(dx*dx + dy*dy));
-    const dist2 = dist * dist;
-    const h = ((bh - rh * dist * 1.4) % 360 + 360) % 360;
-    const l = 28 + dist2 * 62;
-    const s = Math.min(100, bs + 40 - dist2 * 50);
-    // ~10% pixels get a random contrasting hue pop
-    const popN = noise2(x*1.3 + state.seed*0.0011 + 53.1, y*1.3 + state.seed*0.0019 + 37.4);
-    if (popN > 0.90) {
-      const pickN = noise2(x*2.7 + state.seed*0.0031 + 11.3, y*2.7 + state.seed*0.0023 + 91.7);
-      const popH = ((h + 90 + pickN * 180) % 360 + 360) % 360;
-      return `hsl(${popH|0},${Math.round(s*1.2)}%,${l|0}%)`;
-    }
-    return `hsl(${h|0},${s|0}%,${l|0}%)`;
-  }
-
-  // Dark Mix: broad noise + hue pops via noise
-  const nv  = noise2(x*0.04 + colorT, y*0.04 + colorT*0.6);
-  let hOff  = (nv-0.5)*2*rh;
-  let lOff  = (noise2(x*0.03+5, y*0.03)-0.5)*2*rl;
-  const popN2 = noise2(x*0.8 + state.seed*0.001, y*0.8 + state.seed*0.002);
-  if (popN2 > 0.72) {
-    const pd = noise2(x*0.5+300, y*0.5+300);
-    hOff += (pd>0.5?1:-1)*rh*0.6;
-    lOff  = (noise2(x*0.5+400, y*0.5+400)-0.5)*2*rl*1.4;
-  }
-  const h=((bh+hOff)%360+360)%360;
-  const l=Math.max(10,Math.min(95,bl+lOff));
-  return `hsl(${h|0},${bs}%,${l|0}%)`;
-}
-
-// ================================================================
-//  DRAW PIXEL
-// ================================================================
-function drawPixel(px, py, pw, shape) {
-  const x0 = Math.round(px), y0 = Math.round(py), s = Math.round(pw);
-  switch(shape) {
-    case 0: // Square
-      ctx.fillRect(x0, y0, s, s);
-      break;
-    case 2: // Circle
-      ctx.beginPath();
-      ctx.arc(x0 + s/2, y0 + s/2, s/2, 0, Math.PI*2);
-      ctx.fill();
-      break;
-    case 3: // Plus — arms extend to cell edge so crosses connect to neighbours
-      ctx.fillRect(x0 + s*0.38, y0 - 1,     s*0.24, s + 2);
-      ctx.fillRect(x0 - 1,      y0 + s*0.38, s + 2,  s*0.24);
-      break;
-  }
-}
-
-// ================================================================
-//  LAYERS: compute distance from edge for each ON pixel
-// ================================================================
-function computeLayerDepth() {
-  // BFS from all OFF cells to find distance of each ON cell from nearest edge
-  const dist = new Int16Array(cols * rows).fill(-1);
-  const queue = [];
-  // seed: all ON cells adjacent to an OFF cell get dist=0
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) {
-      if (!grid[y*cols+x]) continue;
-      let onEdge = false;
-      for (const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
-        const nx=x+dx, ny=y+dy;
-        if (nx<0||nx>=cols||ny<0||ny>=rows||!grid[ny*cols+nx]) { onEdge=true; break; }
-      }
-      if (onEdge) { dist[y*cols+x]=0; queue.push(y*cols+x); }
-    }
-  }
-  // BFS inward
-  let head = 0;
-  while (head < queue.length) {
-    const idx = queue[head++];
-    const x = idx % cols, y = (idx/cols)|0;
-    for (const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
-      const nx=x+dx, ny=y+dy;
-      if (nx<0||nx>=cols||ny<0||ny>=rows) continue;
-      const ni = ny*cols+nx;
-      if (grid[ni] && dist[ni]===-1) {
-        dist[ni] = dist[idx]+1;
-        queue.push(ni);
-      }
-    }
-  }
-  return dist;
-}
-
-
-function render() {
-  ctx.fillStyle = COLOR_SCHEMES[state.colorScheme].bg;
+function drawBackground() {
+  ctx.fillStyle = state.bgColor;
   ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+}
 
-  const ps   = state.pixelSize;
-  const sp   = state.spacing;
-  const zoom = state.shapeScale;
-  const circR = CANVAS_SIZE / 2;
-  const gridCX = cols * ps / 2;
-  const gridCY = isDiamondMode() ? rows * ps / 2 - CANVAS_SIZE/4 : rows * ps / 2;
+function drawFieldAura() {
+  if (!state.pointerActive) return;
+  const radius = getAnimatedRadius();
+  const grd = ctx.createRadialGradient(
+    state.cursorX, state.cursorY, radius * 0.08,
+    state.cursorX, state.cursorY, radius * 1.2
+  );
+  grd.addColorStop(0, 'rgba(255,255,255,0.10)');
+  grd.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.arc(state.cursorX, state.cursorY, radius * 1.2, 0, Math.PI * 2);
+  ctx.fill();
+}
 
-  ctx.save();
-  ctx.translate(CANVAS_SIZE / 2, CANVAS_SIZE / 2);
-  ctx.scale(zoom, zoom);
-  ctx.translate(-gridCX, -gridCY);
+function drawTileOverlay(x, y, size, intensity) {
+  const grd = ctx.createLinearGradient(x, y, x + size, y);
+  grd.addColorStop(0, `rgba(255,255,255,${0.24 * intensity})`);
+  grd.addColorStop(1, `rgba(255,255,255,${0.07 * intensity})`);
+  ctx.fillStyle = grd;
+  ctx.fillRect(x, y, size, size);
+}
 
-  // Circular fade check (in pre-zoom grid coords)
-  function inCircle(cx, cy) {
-    if (!state.radialSym || !state.circleMask) return true;
-    const dx = cx - gridCX, dy = cy - gridCY;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    if (dist > circR) return false;
-    const fadeStart = circR * 0.65;
-    if (dist > fadeStart) {
-      const tt = (dist - fadeStart) / (circR - fadeStart);
-      const keepProb = 1 - Math.pow(tt, 1.5);
-      // use cx/cy as stable noise coords
-      if (noise2(cx * 0.05 + state.seed * 0.001, cy * 0.05) > keepProb) return false;
-    }
-    return true;
-  }
+function updateTiles(dt) {
+  const speed = 1 - Math.pow(1 - state.speed, dt * 60);
+  const ambientChance = state.ambient * 0.9;
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const idx = row * cols + col;
+      const tile = tiles[idx];
+      const x = col * state.tileSize;
+      const y = row * state.tileSize;
+      const centerX = x + state.tileSize * 0.5;
+      const centerY = y + state.tileSize * 0.5;
 
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) {
-      if (!grid[y * cols + x]) continue;
-
-      let cellShape;
-      if (state.mixShapes) {
-        const nv = noise2(x * 0.20 + state.seed * 0.0001, y * 0.20);
-        cellShape = SHAPES[Math.floor(nv * SHAPES.length)].id;
-      } else {
-        cellShape = state.pixelShapeType;
+      let target = 0;
+      if (state.pointerActive) {
+        target = getRevealStrength(centerX - state.cursorX, centerY - state.cursorY);
       }
 
-      if (cellShape === 1 && !state.mixShapes) {
-        const rx = Math.max(1, ps/2 - sp/2);
-        const ry = Math.max(1, ps   - sp/2);
-        const cx = x * ps + (y % 2 === 1 ? ps/2 : 0) + ps/2;
-        const cy = y * ps - CANVAS_SIZE/4;
-        if (cy - ry > CANVAS_SIZE) continue;
-        if (!inCircle(cx, cy)) continue;
-        const sx = (cx - gridCX) * zoom + CANVAS_SIZE/2;
-        const sy = (cy - gridCY) * zoom + CANVAS_SIZE/2;
-        ctx.fillStyle = getPixelColor(x, y, sx, sy);
-        ctx.beginPath();
-        ctx.moveTo(cx,      cy - ry);
-        ctx.lineTo(cx + rx, cy);
-        ctx.lineTo(cx,      cy + ry);
-        ctx.lineTo(cx - rx, cy);
-        ctx.closePath();
-        ctx.fill();
-
-      } else if (cellShape === 1 && state.mixShapes) {
-        const r  = Math.max(1, ps/2 - sp/2);
-        const cx = x * ps + ps/2;
-        const cy = y * ps + ps/2;
-        if (!inCircle(cx, cy)) continue;
-        const sx = (cx - gridCX) * zoom + CANVAS_SIZE/2;
-        const sy = (cy - gridCY) * zoom + CANVAS_SIZE/2;
-        ctx.fillStyle = getPixelColor(x, y, sx, sy);
-        ctx.beginPath();
-        ctx.moveTo(cx,     cy - r);
-        ctx.lineTo(cx + r, cy);
-        ctx.lineTo(cx,     cy + r);
-        ctx.lineTo(cx - r, cy);
-        ctx.closePath();
-        ctx.fill();
-
-      } else {
-        const totalSp = sp;
-        const pw = Math.max(1, ps - totalSp);
-        const px = x * ps + totalSp * 0.5;
-        const py = y * ps + totalSp * 0.5;
-        const cx = px + pw/2, cy = py + pw/2;
-        if (!inCircle(cx, cy)) continue;
-        const sx = (cx - gridCX) * zoom + CANVAS_SIZE/2;
-        const sy = (cy - gridCY) * zoom + CANVAS_SIZE/2;
-        ctx.fillStyle = getPixelColor(x, y, sx, sy);
-        drawPixel(px, py, pw, cellShape);
+      const drift = noise2(
+        col * 0.21 + motionTime * 0.18 + 17.3,
+        row * 0.21 - motionTime * 0.14 + 91.7
+      );
+      const triggerBias = 0.35 + drift * 0.65;
+      const triggerRoll = noise2(
+        col * 1.73 + motionTime * 3.2 + 41.1,
+        row * 1.73 - motionTime * 2.7 + 12.8
+      );
+      if (triggerRoll > 0.72 && Math.random() < ambientChance * triggerBias * dt) {
+        tile.ambient = 0.55 + Math.random() * 0.45;
       }
+
+      tile.ambient = Math.max(0, tile.ambient - dt * (0.9 + Math.random() * 1.2));
+      target = Math.max(target, tile.ambient);
+
+      tile.flip = lerp(tile.flip, target, speed);
     }
   }
-
-  ctx.restore();
 }
 
-// ================================================================
-//  LOOP
-// ================================================================
-function loop(now) {
-  requestAnimationFrame(loop);
-  const dt=now-lastTime; lastTime=now;
-  // fps removed
-  if(state.animate) t+=state.speed;
-  colorT += 0.004; // always drifts, independent of animate
-  updateGrid();
-  setNoiseSeed(state.seed); rngSeed(state.seed);
-  GENERATORS[MODES[state.mode].key]();
-  if (COLOR_SCHEMES[state.colorScheme].layers) layerDist = computeLayerDepth();
-  render();
-}
+function drawTiles() {
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const idx = row * cols + col;
+      const tile = tiles[idx];
+      if (tile.flip < 0.002) continue;
 
-buildUI();
-requestAnimationFrame(loop);
+      const x = col * state.tileSize;
+      const y = row * state.tileSize;
+      const size = Math.min(state.tileSize, CANVAS_SIZE - x, CANVAS_SIZE - y);
+      if (size <= 0) continue;
 
-// ── SIDEBAR TAB SWITCHING ──
-function switchTab(panel) {
-  document.querySelectorAll('.sidebar-tab').forEach(b => b.classList.toggle('active', b.dataset.panel === panel));
-  document.getElementById('sidebar-panel-gen').classList.toggle('active', panel === 'gen');
-  document.getElementById('sidebar-panel-img').classList.toggle('active', panel === 'img');
-  document.getElementById('canvas-wrap').style.display    = panel === 'gen' ? '' : 'none';
-  document.getElementById('media-wrap').style.display     = panel === 'img' ? 'flex' : 'none';
-  document.getElementById('anim-controls').style.display  = panel === 'gen' ? '' : 'none';
-  document.getElementById('flip-controls').style.display  = panel === 'img' ? '' : 'none';
-}
+      const eased = easeFlip(tile.flip);
+      const scaleX = Math.max(0.02, Math.abs(Math.cos(eased * Math.PI)));
+      const visibleWidth = size * scaleX;
+      const drawX = x + (size - visibleWidth) * 0.5;
+      const showingImage = eased >= 0.5 && fittedImage;
 
-document.querySelectorAll('.sidebar-tab').forEach(btn => {
-  btn.onclick = () => switchTab(btn.dataset.panel);
-});
+      if (showingImage) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(drawX, y, visibleWidth, size);
+        ctx.clip();
+        ctx.drawImage(
+          fittedImage.source,
+          fittedImage.dx,
+          fittedImage.dy,
+          fittedImage.drawWidth,
+          fittedImage.drawHeight
+        );
+        ctx.restore();
+      } else {
+        ctx.fillStyle = state.bgColor;
+        ctx.fillRect(drawX, y, visibleWidth, size);
+      }
 
-// ── GRADIENT PRESETS ──
-(function buildGradPresets() {
-  // Same dark IDs and order as Pattern tab dark column
-  const darkIds = [11, 9, 8, 10];
-  const grid = document.getElementById('gradPresetGrid');
-  let selectedSlot = 1;
-
-  darkIds.forEach(id => {
-    const scheme = COLOR_SCHEMES[id];
-
-    // Build background exactly like buildWideSwatches does for Dark
-    let bgStyle;
-    if (scheme.hexColors) {
-      const c = scheme.hexColors;
-      bgStyle = `linear-gradient(135deg,${c[0]},${c[Math.floor(c.length/2)]},${c[c.length-1]})`;
-    } else {
-      bgStyle = scheme.grad || scheme.bg;
+      drawTileOverlay(drawX, y, visibleWidth, tile.flip);
     }
+  }
+}
 
-    const btn = document.createElement('div');
-    btn.style.cssText = `
-      position:relative; height:52px; border-radius:4px; cursor:pointer;
-      border:2px solid var(--border); overflow:hidden; transition:border-color 0.15s;
-      background:${bgStyle};
-    `;
+function render(now) {
+  requestAnimationFrame(render);
+  const dt = Math.min(0.05, (now - lastTime) / 1000);
+  lastTime = now;
+  motionTime += dt;
 
-    const label = document.createElement('span');
-    label.textContent = scheme.name;
-    label.style.cssText = `
-      position:absolute; bottom:3px; left:5px;
-      font-size:8px; letter-spacing:1px; text-transform:uppercase;
-      color:rgba(255,255,255,0.85); text-shadow:0 1px 3px rgba(0,0,0,0.9);
-      font-family:'Share Tech Mono',monospace; pointer-events:none;
-    `;
+  drawBackground();
+  drawFieldAura();
+  updateTiles(dt);
 
-    const slotBadge = document.createElement('span');
-    slotBadge.style.cssText = `
-      position:absolute; top:3px; right:4px;
-      font-size:7px; letter-spacing:1px;
-      color:rgba(255,255,255,0.8); font-family:'Share Tech Mono',monospace;
-      pointer-events:none; text-shadow:0 1px 3px rgba(0,0,0,0.9);
-    `;
+  if (imageBitmap) {
+    drawTiles();
+  }
+}
 
-    btn.appendChild(label);
-    btn.appendChild(slotBadge);
-    btn.onmouseenter = () => btn.style.borderColor = 'var(--accent)';
-    btn.onmouseleave = () => {
-      btn.style.borderColor = btn._slotColor || 'var(--border)';
-    };
-
+function buildModeButtons() {
+  const grid = document.getElementById('modeGrid');
+  MODES.forEach(mode => {
+    const btn = document.createElement('button');
+    btn.className = 'mode-btn' + (mode.id === state.mode ? ' active' : '');
+    btn.textContent = mode.name;
     btn.onclick = () => {
-      const fc = document.createElement('canvas');
-      fc.width = 640; fc.height = 640;
-      const fctx = fc.getContext('2d');
-
-      const colors = scheme.hexColors || [scheme.bg];
-
-      // Draw background
-      fctx.fillStyle = scheme.bg || '#000';
-      fctx.fillRect(0, 0, 640, 640);
-
-      // Multi-stop diagonal gradient with all hexColors
-      const grd = fctx.createLinearGradient(0, 0, 640, 640);
-      colors.forEach((c, i) => grd.addColorStop(i / (colors.length - 1), c));
-      fctx.fillStyle = grd;
-      fctx.fillRect(0, 0, 640, 640);
-
-      const img = new Image();
-      img.onload = () => {
-        flipEngine.setImage(selectedSlot, img);
-        grid.querySelectorAll('div[data-preset-slot]').forEach(b => {
-          b.querySelector('span:last-child').textContent = '';
-          b._slotColor = 'var(--border)';
-          b.style.borderColor = 'var(--border)';
-          delete b.dataset.presetSlot;
-        });
-        slotBadge.textContent = `→${selectedSlot}`;
-        btn.dataset.presetSlot = selectedSlot;
-        btn._slotColor = 'var(--accent)';
-        btn.style.borderColor = 'var(--accent)';
-
-        const uploadBtn = document.getElementById(selectedSlot === 1 ? 'btnUploadPhoto' : 'btnUploadPhoto2');
-        uploadBtn.querySelector('span:last-child').textContent = scheme.name;
-        selectedSlot = selectedSlot === 1 ? 2 : 1;
-      };
-      img.src = fc.toDataURL();
+      state.mode = mode.id;
+      document.querySelectorAll('.mode-btn').forEach(el => el.classList.remove('active'));
+      btn.classList.add('active');
+      syncParamLabels();
+      refreshFramerCode();
     };
-
     grid.appendChild(btn);
   });
-})();
-function handleMediaUpload(file, slot, btnId) {
-  if (!file) return;
-  document.getElementById(btnId).querySelector('span:last-child').textContent = file.name.slice(0, 16);
-  if (file.type.startsWith('video/')) {
-    const vid = document.createElement('video');
-    vid.autoplay = true; vid.loop = true; vid.muted = true; vid.playsInline = true;
-    vid.src = URL.createObjectURL(file);
-    vid.onloadeddata = () => { vid.play(); flipEngine.setVideo(vid, slot); };
-  } else {
-    const img = new Image();
-    img.onload = () => flipEngine.setImage(slot, img);
-    img.src = URL.createObjectURL(file);
+}
+
+function buildParamControls() {
+  const root = document.getElementById('params');
+  for (let i = 1; i <= 5; i++) {
+    const row = document.createElement('div');
+    row.className = 'control';
+    row.innerHTML = `
+      <div class="control-head"><span id="p${i}Lbl"></span><span id="p${i}Val">0.50</span></div>
+      <input type="range" id="p${i}" min="0" max="1" step="0.01" value="${state['p' + i].toFixed(2)}">
+    `;
+    root.appendChild(row);
   }
 }
-document.getElementById('inputPhoto').onchange  = e => handleMediaUpload(e.target.files[0], 1, 'btnUploadPhoto');
-document.getElementById('inputPhoto2').onchange = e => handleMediaUpload(e.target.files[0], 2, 'btnUploadPhoto2');
 
-// Wave buttons
-document.querySelectorAll('[data-wave]').forEach(b => {
-  b.onclick = () => {
-    flipEngine.waveType = parseInt(b.dataset.wave);
-    document.querySelectorAll('[data-wave]').forEach(x => x.classList.toggle('active', x === b));
+function syncParamLabels() {
+  for (let i = 1; i <= 5; i++) {
+    const label = document.getElementById(`p${i}Lbl`);
+    const input = document.getElementById(`p${i}`);
+    const value = document.getElementById(`p${i}Val`);
+    if (label) label.textContent = MODE_PARAMS[state.mode][i - 1];
+    if (input) input.value = state[`p${i}`].toFixed(2);
+    if (value) value.textContent = state[`p${i}`].toFixed(2);
+  }
+}
+
+function wireRange(id, key, formatter = v => v) {
+  const input = document.getElementById(id);
+  const label = document.getElementById(id + 'Val');
+  label.textContent = formatter(input.value);
+  input.addEventListener('input', () => {
+    state[key] = parseFloat(input.value);
+    label.textContent = formatter(input.value);
+    if (key === 'tileSize') resizeGrid();
+    refreshFramerCode();
+  });
+}
+
+function esc(str) {
+  return String(str).replace(/\\/g, '\\\\').replace(/`/g, '\\`');
+}
+
+function getCurrentFramerCode() {
+  const cfg = {
+    mode: state.mode,
+    radialRays: state.radialRays,
+    tileSize: state.tileSize,
+    radius: state.radius,
+    softness: state.softness,
+    speed: state.speed,
+    bgColor: state.bgColor,
+    patternScale: state.patternScale,
+    density: state.density,
+    pulse: state.pulse,
+    rotate: state.rotate,
+    p1: state.p1,
+    p2: state.p2,
+    p3: state.p3,
+    p4: state.p4,
+    p5: state.p5,
   };
-});
 
-// Pixel size S/L buttons
-document.querySelectorAll('[data-flipsize]').forEach(btn => {
-  btn.onclick = () => {
-    flipEngine.pixelSize = parseInt(btn.dataset.flipsize);
-    flipEngine.rebuild();
-    document.querySelectorAll('[data-flipsize]').forEach(b => b.classList.toggle('active', b === btn));
-  };
-});
+  return `import * as React from "react"
+import { addPropertyControls, ControlType } from "framer"
 
-// Flip trigger
-document.getElementById('btnFlipTrigger').onclick = () => {
-  if (flipEngine.targetFlip < Math.PI / 2) flipEngine.targetFlip = Math.PI * 2;
-  else flipEngine.targetFlip = 0;
-};
+type Tile = { flip: number }
 
-// ================================================================
-//  THREE.JS FLIP ENGINE
-// ================================================================
-const flipEngine = (() => {
-  const canvas = document.getElementById('flipCanvas');
-  const W = 640, H = 640;
-  canvas.width = W; canvas.height = H;
+const CONFIG = ${JSON.stringify(cfg, null, 4)}
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
-  renderer.setSize(W, H, false); // false = don't update CSS size
-  renderer.setClearColor(0xffffff);
+function clamp(value: number, min: number, max: number) {
+    return Math.min(max, Math.max(min, value))
+}
 
-  // overlayCanvas must match exactly the WebGL canvas internal size
-  const overlayCanvas = document.getElementById('overlayCanvas');
-  overlayCanvas.width  = W;
-  overlayCanvas.height = H;
-  const octxOv = overlayCanvas.getContext('2d');
+function lerp(a: number, b: number, t: number) {
+    return a + (b - a) * t
+}
 
-  const scene  = new THREE.Scene();
-  const camera = new THREE.OrthographicCamera(0, W, 0, H, -1000, 1000);
-  camera.position.z = 500;
+function smoothstep(edge0: number, edge1: number, x: number) {
+    const t = clamp((x - edge0) / Math.max(0.0001, edge1 - edge0), 0, 1)
+    return t * t * (3 - 2 * t)
+}
 
-  let pixelSize  = 20;
-  let waveType   = 1;
-  let speed      = 0.04;
-  let flip       = 0;
-  let targetFlip = 0;
-  let frameCount = 0;
-  let tex1 = null, tex2 = null;
-  let videoEl1 = null, videoEl2 = null;
+function easeFlip(value: number) {
+    return 0.5 - 0.5 * Math.cos(value * Math.PI)
+}
 
-  // Offscreen canvases for pixel sampling
-  const oc1 = document.createElement('canvas');
-  const oc2 = document.createElement('canvas');
-  const octx1 = oc1.getContext('2d', { willReadFrequently: true });
-  const octx2 = oc2.getContext('2d', { willReadFrequently: true });
+function hash(x: number, y: number, seed: number) {
+    const n = Math.sin(x * 127.1 + y * 311.7 + seed * 74.3) * 43758.5453
+    return n - Math.floor(n)
+}
 
-  // Pool of meshes
-  let meshes = [];
-  let cols = 0, rows = 0;
+function fade(f: number) {
+    return f * f * f * (f * (f * 6 - 15) + 10)
+}
 
-  function rebuild() {
-    meshes.forEach(m => scene.remove(m));
-    meshes = [];
-    cols = Math.ceil(W / pixelSize);
-    rows = Math.ceil(H / pixelSize);
-    const geo = new THREE.PlaneGeometry(pixelSize, pixelSize);
+function noise2(x: number, y: number, seed: number) {
+    const ix = Math.floor(x)
+    const iy = Math.floor(y)
+    const fx = x - ix
+    const fy = y - iy
+    const ux = fade(fx)
+    const uy = fade(fy)
+    const a = hash(ix, iy, seed)
+    const b = hash(ix + 1, iy, seed)
+    const c = hash(ix, iy + 1, seed)
+    const d = hash(ix + 1, iy + 1, seed)
+    return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy
+}
 
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.set(c * pixelSize + pixelSize / 2, r * pixelSize + pixelSize / 2, 0);
-        scene.add(mesh);
-        meshes.push(mesh);
-      }
+function noiseP(x: number, y: number, seed: number) {
+    let value = 0
+    let amp = 1
+    let freq = 1
+    let max = 0
+    for (let o = 0; o < 4; o++) {
+        value += noise2(x * freq, y * freq, seed) * amp
+        max += amp
+        amp *= 0.5
+        freq *= 2
     }
-  }
+    return value / max
+}
 
-  function sampleColor(octx, px, py, ps) {
-    const sx = Math.min(Math.floor(px + ps / 2), octx.canvas.width - 1);
-    const sy = Math.min(Math.floor(py + ps / 2), octx.canvas.height - 1);
-    try {
-      const d = octx.getImageData(sx, sy, 1, 1).data;
-      return { r: d[0], g: d[1], b: d[2] };
-    } catch(e) { return { r: 255, g: 255, b: 255 }; }
-  }
+function foldAng(ang: number, rays: number) {
+    const step = Math.PI / rays
+    const a = ((ang % (step * 2)) + step * 2) % (step * 2)
+    return a < step ? a : step * 2 - a
+}
 
-  function updateTextures() {
-    if (videoEl1 && !videoEl1.paused) octx1.drawImage(videoEl1, 0, 0, W, H);
-    if (videoEl2 && !videoEl2.paused) octx2.drawImage(videoEl2, 0, 0, W, H);
-  }
+function getModePattern(normalized: number, angle: number, time: number, seed: number) {
+    const sc = CONFIG.patternScale
+    const density = CONFIG.density
+    const r = normalized
+    const rays = Math.max(3, CONFIG.radialRays)
+    const folded = foldAng(angle, rays)
 
-  function lerp(a, b, t) { return a + (b - a) * t; }
+    if (CONFIG.mode === 0) {
+        const scale = (0.45 + CONFIG.p1 * 1.1) * sc
+        const thick = 0.04 + CONFIG.p2 * 0.22
+        const layers = 1 + Math.floor(CONFIG.p3 * 3)
+        let best = 0
+        for (let l = 0; l < layers; l++) {
+            const layerScale = 1 + l * 0.45
+            const n = noiseP(
+                r * 16 * scale * layerScale + time * (0.1 + CONFIG.p5 * 0.7),
+                folded * 10 * scale * (1 + l * 0.3) + time * (0.1 + CONFIG.p4 * 0.7),
+                seed
+            )
+            const d = Math.abs(n - Math.floor(n * 6) / 6)
+            best = Math.max(best, 1 - smoothstep(0, thick, d))
+        }
+        return best * (0.6 + (1 - normalized) * 0.4)
+    }
 
-  function render() {
-    requestAnimationFrame(render);
-    const mw = document.getElementById('media-wrap');
-    if (mw.style.display === 'none') return;
+    if (CONFIG.mode === 1) {
+        const freq1 = 0.7 + 2.8 * CONFIG.p1
+        const freq2 = 0.5 + 2.0 * CONFIG.p2
+        const amp1 = 0.25 + 1.5 * CONFIG.p3
+        const amp2 = 0.2 + 1.2 * CONFIG.p4
+        const thresh = 0.1 + 0.85 * CONFIG.p5
+        const rr = r * 18 * sc
+        const l1 = Math.sin(rr * freq1 + Math.cos(angle * rays) * amp1 + time * 1.0)
+        const l2 = Math.cos(rr * freq2 + Math.sin(angle * rays) * amp2 + time * 0.75)
+        const l3 = Math.sin(r * 28 + time * 0.5)
+        const v = Math.abs((l1 + l2 + l3) / 3)
+        return smoothstep(thresh * density * 0.6, 1, v)
+    }
 
-    frameCount++;
-    updateTextures();
+    if (CONFIG.mode === 2) {
+        const scale = (0.7 + CONFIG.p1 * 1.2) * sc
+        const twist = CONFIG.p2 * Math.PI * 2
+        const n1 = noiseP(r * 18 * scale + time * (0.1 + CONFIG.p3 * 0.9), folded * 7 * scale + time * 0.28, seed)
+        const n2 = noiseP(r * 36 * scale + time * 0.24, folded * (10 + CONFIG.p5 * 10) * scale - time * (0.1 + CONFIG.p4 * 0.9), seed)
+        const v = Math.sin(n1 * Math.PI * 4 + twist + angle * 1.2) * Math.cos(n2 * Math.PI * 4)
+        return smoothstep(density * 0.4, 1, (v + 1) * 0.5)
+    }
 
-    flip = lerp(flip, targetFlip, speed);
+    if (CONFIG.mode === 3) {
+        const radial1 = 6 + CONFIG.p1 * 18
+        const twist = 1 + CONFIG.p2 * 8
+        const rings = 2 + CONFIG.p3 * 10
+        const dens = 1 + CONFIG.p4 * 6
+        const speed = 0.2 + CONFIG.p5 * 1.5
+        const v1 = Math.sin(r * radial1 * sc * rings + time * speed)
+        const v2 = Math.cos(r * (4 + twist * 2) * sc - time * speed * 0.7)
+        const v3 = Math.sin(angle * rays + time * 0.4)
+        const val = (v1 + v2 + v3 + 3) / 6
+        const ringMask = smoothstep((density * dens) * 0.2, 1, val)
+        const petals = 0.5 + 0.5 * Math.cos(angle * rays + twist) * (1 - r * 0.55)
+        return ringMask * (0.4 + petals * 0.6)
+    }
 
-    const cx = W / 2, cy = H / 2;
-    let idx = 0;
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const mesh = meshes[idx++];
-        if (!mesh) continue;
+    if (CONFIG.mode === 4) {
+        const scale = (0.8 + CONFIG.p1 * 1.1) * sc
+        const sharpness = CONFIG.p2
+        const px = r * 24 * scale
+        const py = folded * 8 * scale
+        const warp = noise2(px * 0.35 + time * 0.1, py * 0.35 + time * 0.08, seed) * 1.8
+        const n1 = Math.sin((px + warp + time * (0.15 + CONFIG.p4 * 0.9)) * Math.PI * 1.5)
+        const n2 = Math.sin((py + warp * 0.7 - time * (0.15 + CONFIG.p3 * 0.9)) * Math.PI * 2.1)
+        const n3 = Math.sin((px + py) * (0.6 + CONFIG.p5 * 0.8) * Math.PI + warp * 0.5 + time * 0.4)
+        const v = (n1 + n2 + n3 + 3) / 6
+        return smoothstep((density * 0.4) + sharpness * 0.3, 1, v)
+    }
 
-        const px = c * pixelSize;
-        const py = r * pixelSize;
-        const d  = Math.sqrt((px - cx) ** 2 + (py - cy) ** 2);
+    const f1 = 0.5 + CONFIG.p1 * 2.0
+    const f2 = 0.4 + CONFIG.p2 * 1.8
+    const f3 = 0.35 + CONFIG.p3 * 1.5
+    const dens = 0.3 + CONFIG.p4 * 0.9
+    const bands = 2 + CONFIG.p5 * 6
+    const p = (
+        Math.sin(r * 24 * sc * f1 + time * 0.3) +
+        Math.sin(angle * 18 * sc * f2 + time * 0.18) +
+        Math.sin((r * 14 + angle * 8) * sc * f3 + time * 0.15) +
+        Math.sin(r * 10 - time * 0.25)
+    ) / 4
+    const v = Math.abs(Math.sin(p * Math.PI * bands))
+    return smoothstep(dens * density * 0.45, 1, v)
+}
 
-        let localOffset = 0;
-        switch (waveType) {
-          case 1: localOffset = d * 0.003; break;
-          case 2: localOffset = 0.5 + 0.2 * Math.sin(d * 0.2 + frameCount * 0.2); break;
-          case 3: localOffset = 0.5 + 0.5 * Math.sin((px + py) * 0.03 + frameCount * 0.08); break;
-          case 4: localOffset = ((px + py) / (W + H)) * 1.2; break;
-          case 5: {
-            const ang = Math.atan2(py - cy, px - cx);
-            const rad = Math.sqrt((px - cx) ** 2 + (py - cy) ** 2);
-            localOffset = 0.5 + 0.5 * Math.sin(5 * ang + rad * 0.05 + frameCount * 0.1);
-            break;
-          }
-          case 6: localOffset = 0.5 + 0.5 * Math.sin(d * 0.05 + frameCount * 0.05); break;
+function useLoadedVideo(src?: string) {
+    const [video, setVideo] = React.useState<HTMLVideoElement | null>(null)
+
+    React.useEffect(() => {
+        if (!src) {
+            setVideo(null)
+            return
         }
 
-        let localFlip = flip - localOffset;
-        localFlip = Math.max(0, Math.min(Math.PI, localFlip));
-
-        const c1 = tex1 ? sampleColor(octx1, px, py, pixelSize) : { r: 200, g: 200, b: 200 };
-        const c2 = tex2 ? sampleColor(octx2, px, py, pixelSize) : { r: 80,  g: 80,  b: 80  };
-
-        const isWhite1 = c1.r > 240 && c1.g > 240 && c1.b > 240;
-        const isWhite2 = c2.r > 240 && c2.g > 240 && c2.b > 240;
-
-        if (isWhite1 && isWhite2) {
-          mesh.material.color.setRGB(1, 1, 1);
-          mesh.rotation.y = 0;
-          mesh.scale.x = 1;
-        } else {
-          // Y-axis rotation: scaleX simulates perspective foreshortening
-          const scaleX = Math.abs(Math.cos(localFlip));
-          const useImg2 = localFlip >= Math.PI / 2;
-          const col = useImg2 ? c2 : c1;
-          mesh.material.color.setRGB(col.r / 255, col.g / 255, col.b / 255);
-          mesh.scale.x = Math.max(0.001, scaleX);
-          // True 3D Y rotation
-          mesh.rotation.y = localFlip;
+        const next = document.createElement("video")
+        next.crossOrigin = "anonymous"
+        next.muted = true
+        next.loop = true
+        next.autoplay = true
+        next.playsInline = true
+        next.preload = "auto"
+        next.onloadeddata = () => {
+            void next.play().catch(() => {})
+            setVideo(next)
         }
-      }
-    }
+        next.onerror = () => setVideo(null)
+        next.src = src
+        next.load()
 
-    renderer.render(scene, camera);
+        return () => {
+            next.pause()
+            next.removeAttribute("src")
+            next.load()
+        }
+    }, [src])
 
-    // Draw overlay grid on top every frame - each pixel has its own gradient
-    octxOv.clearRect(0, 0, W, H);
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const x = c * pixelSize;
-        const y = r * pixelSize;
-        const grd = octxOv.createLinearGradient(x, y, x + pixelSize, y);
-        grd.addColorStop(0, 'rgba(255,255,255,0.26)');
-        grd.addColorStop(1, 'rgba(255,255,255,0.10)');
-        octxOv.fillStyle = grd;
-        octxOv.fillRect(x, y, pixelSize, pixelSize);
-      }
-    }
+    return video
+}
+
+function drawFittedMedia(
+    ctx: CanvasRenderingContext2D,
+    media: CanvasImageSource,
+    mediaWidth: number,
+    mediaHeight: number,
+    width: number,
+    height: number
+) {
+    const scale = Math.max(width / mediaWidth, height / mediaHeight)
+    const drawWidth = mediaWidth * scale
+    const drawHeight = mediaHeight * scale
+    const dx = (width - drawWidth) / 2
+    const dy = (height - drawHeight) / 2
+    ctx.drawImage(media, dx, dy, drawWidth, drawHeight)
+}
+
+export default function QuipPeekExport(props: { video?: string }) {
+    const { video } = props
+    const containerRef = React.useRef<HTMLDivElement>(null)
+    const canvasRef = React.useRef<HTMLCanvasElement>(null)
+    const animationRef = React.useRef<number>(0)
+    const lastTimeRef = React.useRef<number>(0)
+    const motionTimeRef = React.useRef<number>(0)
+    const seedRef = React.useRef(1337)
+    const pointerRef = React.useRef({ x: 0, y: 0, active: false })
+    const tilesRef = React.useRef<Tile[]>([])
+    const videoEl = useLoadedVideo(video)
+
+    React.useEffect(() => {
+        const element = containerRef.current
+        const canvas = canvasRef.current
+        if (!element || !canvas) return
+        const ctx = canvas.getContext("2d")
+        if (!ctx) return
+
+        const resizeGrid = (width: number, height: number) => {
+            const cols = Math.ceil(width / CONFIG.tileSize)
+            const rows = Math.ceil(height / CONFIG.tileSize)
+            const prev = tilesRef.current
+            const next: Tile[] = new Array(cols * rows)
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const idx = row * cols + col
+                    next[idx] = { flip: prev[idx]?.flip ?? 0 }
+                }
+            }
+            tilesRef.current = next
+        }
+
+        const resizeCanvas = () => {
+            const rect = element.getBoundingClientRect()
+            const dpr = window.devicePixelRatio || 1
+            canvas.width = Math.max(1, Math.round(rect.width * dpr))
+            canvas.height = Math.max(1, Math.round(rect.height * dpr))
+            canvas.style.width = rect.width + "px"
+            canvas.style.height = rect.height + "px"
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+            resizeGrid(rect.width, rect.height)
+            if (!pointerRef.current.active) {
+                pointerRef.current.x = rect.width / 2
+                pointerRef.current.y = rect.height / 2
+            }
+        }
+
+        const updatePointer = (clientX: number, clientY: number) => {
+            const rect = canvas.getBoundingClientRect()
+            pointerRef.current.x = clientX - rect.left
+            pointerRef.current.y = clientY - rect.top
+            pointerRef.current.active = true
+        }
+
+        const drawTileOverlay = (x: number, y: number, width: number, height: number, intensity: number) => {
+            const gradient = ctx.createLinearGradient(x, y, x + width, y)
+            gradient.addColorStop(0, "rgba(255,255,255," + 0.24 * intensity + ")")
+            gradient.addColorStop(1, "rgba(255,255,255," + 0.07 * intensity + ")")
+            ctx.fillStyle = gradient
+            ctx.fillRect(x, y, width, height)
+        }
+
+        const renderFrame = (now: number) => {
+            animationRef.current = requestAnimationFrame(renderFrame)
+
+            const dt = lastTimeRef.current ? Math.min(0.05, (now - lastTimeRef.current) / 1000) : 1 / 60
+            lastTimeRef.current = now
+            motionTimeRef.current += dt
+
+            const width = canvas.width / (window.devicePixelRatio || 1)
+            const height = canvas.height / (window.devicePixelRatio || 1)
+            const cols = Math.ceil(width / CONFIG.tileSize)
+            const rows = Math.ceil(height / CONFIG.tileSize)
+            const tiles = tilesRef.current
+            const pointer = pointerRef.current
+            const radius = CONFIG.radius * (1 + CONFIG.pulse * Math.sin(motionTimeRef.current * 1.7))
+            const rotation = motionTimeRef.current * CONFIG.rotate
+            const blendSpeed = 1 - Math.pow(1 - CONFIG.speed, dt * 60)
+
+            ctx.clearRect(0, 0, width, height)
+            ctx.fillStyle = "${esc(state.bgColor)}"
+            ctx.fillRect(0, 0, width, height)
+
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const idx = row * cols + col
+                    const tile = tiles[idx]
+                    if (!tile) continue
+
+                    const x = col * CONFIG.tileSize
+                    const y = row * CONFIG.tileSize
+                    const tileWidth = Math.min(CONFIG.tileSize, width - x)
+                    const tileHeight = Math.min(CONFIG.tileSize, height - y)
+                    const centerX = x + tileWidth * 0.5
+                    const centerY = y + tileHeight * 0.5
+
+                    let target = 0
+                    if (pointer.active) {
+                        const dx = centerX - pointer.x
+                        const dy = centerY - pointer.y
+                        const rotatedX = dx * Math.cos(-rotation) - dy * Math.sin(-rotation)
+                        const rotatedY = dx * Math.sin(-rotation) + dy * Math.cos(-rotation)
+                        const dist = Math.sqrt(rotatedX * rotatedX + rotatedY * rotatedY)
+
+                        if (dist < radius) {
+                            const normalized = dist / radius
+                            const angle = Math.atan2(rotatedY, rotatedX)
+                            const radialEnvelope = 1 - smoothstep(1 - CONFIG.softness, 1, normalized)
+                            const pattern = getModePattern(normalized, angle, motionTimeRef.current, seedRef.current)
+                            const centerBias = 1 - smoothstep(0.82, 1, normalized)
+                            target = clamp(pattern * radialEnvelope * 0.78 + centerBias * 0.22, 0, 1)
+                        }
+                    }
+
+                    tile.flip = lerp(tile.flip, target, blendSpeed)
+                    if (tile.flip < 0.002) continue
+
+                    const eased = easeFlip(tile.flip)
+                    const scaleX = Math.max(0.02, Math.abs(Math.cos(eased * Math.PI)))
+                    const visibleWidth = tileWidth * scaleX
+                    const drawX = x + (tileWidth - visibleWidth) * 0.5
+                    const showVideo = eased >= 0.5 && videoEl && videoEl.readyState >= 2
+
+                    if (showVideo) {
+                        ctx.save()
+                        ctx.beginPath()
+                        ctx.rect(drawX, y, visibleWidth, tileHeight)
+                        ctx.clip()
+                        drawFittedMedia(ctx, videoEl, videoEl.videoWidth, videoEl.videoHeight, width, height)
+                        ctx.restore()
+                    } else {
+                        ctx.fillStyle = "${esc(state.bgColor)}"
+                        ctx.fillRect(drawX, y, visibleWidth, tileHeight)
+                    }
+
+                    drawTileOverlay(drawX, y, visibleWidth, tileHeight, tile.flip)
+                }
+            }
+        }
+
+        const onPointerMove = (event: PointerEvent) => updatePointer(event.clientX, event.clientY)
+        const onPointerEnter = (event: PointerEvent) => updatePointer(event.clientX, event.clientY)
+        const onPointerLeave = () => {
+            pointerRef.current.active = false
+        }
+
+        const observer = new ResizeObserver(resizeCanvas)
+        observer.observe(element)
+        element.addEventListener("pointermove", onPointerMove)
+        element.addEventListener("pointerenter", onPointerEnter)
+        element.addEventListener("pointerleave", onPointerLeave)
+
+        resizeCanvas()
+        animationRef.current = requestAnimationFrame(renderFrame)
+
+        return () => {
+            cancelAnimationFrame(animationRef.current)
+            observer.disconnect()
+            element.removeEventListener("pointermove", onPointerMove)
+            element.removeEventListener("pointerenter", onPointerEnter)
+            element.removeEventListener("pointerleave", onPointerLeave)
+        }
+    }, [videoEl])
+
+    return (
+        <div
+            ref={containerRef}
+            style={{
+                width: "100%",
+                height: "100%",
+                overflow: "hidden",
+                position: "relative",
+                background: "${esc(state.bgColor)}",
+                touchAction: "none",
+            }}
+        >
+            <canvas
+                ref={canvasRef}
+                style={{
+                    width: "100%",
+                    height: "100%",
+                    display: "block",
+                    background: "${esc(state.bgColor)}",
+                }}
+            />
+        </div>
+    )
+}
+
+addPropertyControls(QuipPeekExport, {
+    video: {
+        type: ControlType.File,
+        title: "Video",
+        allowedFileTypes: ["mp4", "mov", "webm", "ogg"],
+    },
+})
+`;
+}
+
+async function copyFramerComponent() {
+  const status = document.getElementById('copyStatus');
+  const codeBox = document.getElementById('framerCode');
+  const code = getCurrentFramerCode();
+  codeBox.value = code;
+  try {
+    await navigator.clipboard.writeText(code);
+    status.textContent = 'Framer component copied. Paste it into a Framer code component file.';
+  } catch (err) {
+    codeBox.focus();
+    codeBox.select();
+    status.textContent = 'Copy failed. The generated code is selected below for manual copy.';
   }
+}
 
-  function setImage(slot, img) {
-    document.getElementById('media-placeholder').style.display = 'none';
-    const oc = slot === 1 ? oc1 : oc2;
-    const octx = slot === 1 ? octx1 : octx2;
-    oc.width = W; oc.height = H;
-    octx.drawImage(img, 0, 0, W, H);
-    if (slot === 1) { tex1 = true; videoEl1 = null; }
-    else tex2 = true;
-    if (meshes.length === 0) rebuild();
-  }
+function refreshFramerCode() {
+  const codeBox = document.getElementById('framerCode');
+  if (!codeBox) return;
+  codeBox.value = getCurrentFramerCode();
+}
 
-  function setVideo(vid, slot = 1) {
-    document.getElementById('media-placeholder').style.display = 'none';
-    const oc = slot === 1 ? oc1 : oc2;
-    const octx = slot === 1 ? octx1 : octx2;
-    oc.width = W; oc.height = H;
-    if (slot === 1) { videoEl1 = vid; tex1 = true; }
-    else            { videoEl2 = vid; tex2 = true; }
-    if (meshes.length === 0) rebuild();
-  }
+wireRange('tileSize', 'tileSize', v => String(parseInt(v, 10)));
+wireRange('radius', 'radius', v => String(parseInt(v, 10)));
+wireRange('softness', 'softness', v => Number(v).toFixed(2));
+wireRange('speed', 'speed', v => Number(v).toFixed(2));
+wireRange('patternScale', 'patternScale', v => Number(v).toFixed(2));
+wireRange('density', 'density', v => Number(v).toFixed(2));
+wireRange('pulse', 'pulse', v => Number(v).toFixed(2));
+wireRange('rotate', 'rotate', v => Number(v).toFixed(2));
+wireRange('ambient', 'ambient', v => Number(v).toFixed(2));
+wireRange('radialRays', 'radialRays', v => String(parseInt(v, 10)));
 
-  rebuild();
-  render();
+const bgColor = document.getElementById('bgColor');
+bgColor.addEventListener('input', () => {
+  state.bgColor = bgColor.value;
+  document.getElementById('bgColorLabel').textContent = bgColor.value;
+  document.documentElement.style.setProperty('--canvas-bg', bgColor.value);
+  refreshFramerCode();
+});
 
-  return {
-    get pixelSize() { return pixelSize; },
-    set pixelSize(v) { pixelSize = v; },
-    get waveType() { return waveType; },
-    set waveType(v) { waveType = v; },
-    get speed() { return speed; },
-    set speed(v) { speed = v; },
-    get targetFlip() { return targetFlip; },
-    set targetFlip(v) { targetFlip = v; },
-    rebuild, setImage, setVideo
-  };
-})();
+document.getElementById('uploadBtn').addEventListener('click', () => fileInput.click());
+document.getElementById('copyFramerBtn').addEventListener('click', copyFramerComponent);
+
+fileInput.addEventListener('change', async (event) => {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  imageBitmap = await createImageBitmap(file);
+  fitImageToCanvas(imageBitmap);
+  emptyState.style.display = 'none';
+  noiseSeed = Math.random() * 9999;
+  refreshFramerCode();
+});
+
+document.getElementById('centerBtn').addEventListener('click', () => {
+  state.cursorX = CANVAS_SIZE / 2;
+  state.cursorY = CANVAS_SIZE / 2;
+  state.pointerActive = true;
+});
+
+canvas.addEventListener('mousemove', updateCursor);
+canvas.addEventListener('mouseenter', updateCursor);
+canvas.addEventListener('mouseleave', clearCursor);
+canvas.addEventListener('touchstart', event => {
+  const touch = event.touches[0];
+  if (!touch) return;
+  updateCursor(touch);
+}, { passive: true });
+canvas.addEventListener('touchmove', event => {
+  const touch = event.touches[0];
+  if (!touch) return;
+  updateCursor(touch);
+}, { passive: true });
+canvas.addEventListener('touchend', clearCursor, { passive: true });
+
+buildModeButtons();
+buildParamControls();
+for (let i = 1; i <= 5; i++) {
+  wireRange(`p${i}`, `p${i}`, v => Number(v).toFixed(2));
+}
+syncParamLabels();
+refreshFramerCode();
+resizeGrid();
+requestAnimationFrame(render);
 </script>
 </body>
 </html>
