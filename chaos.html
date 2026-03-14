@@ -478,11 +478,6 @@ let lastTime = performance.now();
 let motionTime = 0;
 let noiseSeed = Math.random() * 9999;
 let burstUntil = 0;
-const mediaFrameCanvas = document.createElement('canvas');
-mediaFrameCanvas.width = CANVAS_SIZE;
-mediaFrameCanvas.height = CANVAS_SIZE;
-const mediaFrameCtx = mediaFrameCanvas.getContext('2d');
-let mediaFrameReady = false;
 
 function resizeGrid() {
   cols = Math.ceil(CANVAS_SIZE / state.tileSize);
@@ -521,20 +516,6 @@ function fitImageToCanvas(source) {
   const dx = (CANVAS_SIZE - drawWidth) / 2;
   const dy = (CANVAS_SIZE - drawHeight) / 2;
   fittedMedia = { source, dx, dy, drawWidth, drawHeight };
-}
-
-function updateMediaFrame() {
-  if (!mediaFrameCtx) return false;
-  mediaFrameCtx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-  if (!fittedMedia || !mediaVideo || mediaVideo.readyState < 2) return false;
-  mediaFrameCtx.drawImage(
-    fittedMedia.source,
-    fittedMedia.dx,
-    fittedMedia.dy,
-    fittedMedia.drawWidth,
-    fittedMedia.drawHeight
-  );
-  return true;
 }
 
 function lerp(a, b, t) {
@@ -865,6 +846,58 @@ function updateTiles(dt) {
 }
 
 function drawTiles() {
+  if (state.mixShapes) {
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const idx = row * cols + col;
+        const tile = tiles[idx];
+        if (tile.flip < 0.002) continue;
+
+        const x = col * state.tileSize;
+        const y = row * state.tileSize;
+        const size = Math.min(state.tileSize, CANVAS_SIZE - x, CANVAS_SIZE - y);
+        if (size <= 0) continue;
+
+        const eased = easeFlip(tile.flip);
+        const scaleX = Math.max(0.02, Math.abs(Math.cos(eased * Math.PI)));
+        const visibleWidth = size * scaleX;
+        const drawX = x + (size - visibleWidth) * 0.5;
+        const shape = getModuleShape(col, row);
+        const showingMedia = eased >= 0.5 && fittedMedia && mediaVideo && mediaVideo.readyState >= 2;
+
+        if (showingMedia) {
+          const clipPath = new Path2D();
+          addModulePath(clipPath, drawX, y, visibleWidth, size, shape);
+          ctx.save();
+          ctx.clip(clipPath);
+          ctx.drawImage(
+            fittedMedia.source,
+            fittedMedia.dx,
+            fittedMedia.dy,
+            fittedMedia.drawWidth,
+            fittedMedia.drawHeight
+          );
+          ctx.restore();
+        } else {
+          const clipPath = new Path2D();
+          addModulePath(clipPath, drawX, y, visibleWidth, size, shape);
+          ctx.save();
+          ctx.clip(clipPath);
+          ctx.fillStyle = state.bgColor;
+          ctx.fillRect(drawX, y, visibleWidth, size);
+          ctx.restore();
+        }
+
+        drawTileOverlay(drawX, y, visibleWidth, size, tile.flip, shape);
+      }
+    }
+    return;
+  }
+
+  const frontMask = new Path2D();
+  const backMask = new Path2D();
+  const overlayTiles = [];
+
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const idx = row * cols + col;
@@ -881,27 +914,40 @@ function drawTiles() {
       const visibleWidth = size * scaleX;
       const drawX = x + (size - visibleWidth) * 0.5;
       const shape = getModuleShape(col, row);
-      const showingMedia = eased >= 0.5 && mediaFrameReady;
+      const showingMedia = eased >= 0.5 && fittedMedia && mediaVideo && mediaVideo.readyState >= 2;
 
       if (showingMedia) {
-        const clipPath = new Path2D();
-        addModulePath(clipPath, drawX, y, visibleWidth, size, shape);
-        ctx.save();
-        ctx.clip(clipPath);
-        ctx.drawImage(mediaFrameCanvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
-        ctx.restore();
+        addModulePath(frontMask, drawX, y, visibleWidth, size, shape);
       } else {
-        const clipPath = new Path2D();
-        addModulePath(clipPath, drawX, y, visibleWidth, size, shape);
-        ctx.save();
-        ctx.clip(clipPath);
-        ctx.fillStyle = state.bgColor;
-        ctx.fillRect(drawX, y, visibleWidth, size);
-        ctx.restore();
+        addModulePath(backMask, drawX, y, visibleWidth, size, shape);
       }
 
-      drawTileOverlay(drawX, y, visibleWidth, size, tile.flip, shape);
+      overlayTiles.push({ drawX, y, visibleWidth, size, flip: tile.flip, shape });
     }
+  }
+
+  if (fittedMedia && mediaVideo && mediaVideo.readyState >= 2) {
+    ctx.save();
+    ctx.clip(frontMask);
+    ctx.drawImage(
+      fittedMedia.source,
+      fittedMedia.dx,
+      fittedMedia.dy,
+      fittedMedia.drawWidth,
+      fittedMedia.drawHeight
+    );
+    ctx.restore();
+  }
+
+  ctx.save();
+  ctx.clip(backMask);
+  ctx.fillStyle = state.bgColor;
+  ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  ctx.restore();
+
+  for (let i = 0; i < overlayTiles.length; i++) {
+    const o = overlayTiles[i];
+    drawTileOverlay(o.drawX, o.y, o.visibleWidth, o.size, o.flip, o.shape);
   }
 }
 
@@ -910,13 +956,12 @@ function render(now) {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
   motionTime += dt;
-  mediaFrameReady = updateMediaFrame();
 
   drawBackground();
   drawFieldAura();
   updateTiles(dt);
 
-  if (mediaFrameReady) {
+  if (mediaVideo && mediaVideo.readyState >= 2) {
     drawTiles();
   }
 }
@@ -1262,7 +1307,6 @@ export default function QuipPeekExport(props: { video?: string }) {
     const burstUntilRef = React.useRef(0)
     const pointerRef = React.useRef({ x: 0, y: 0, active: false })
     const tilesRef = React.useRef<Tile[]>([])
-    const mediaFrameCanvasRef = React.useRef<HTMLCanvasElement | null>(null)
     const videoEl = useLoadedVideo(video)
 
     React.useEffect(() => {
@@ -1308,24 +1352,6 @@ export default function QuipPeekExport(props: { video?: string }) {
             pointerRef.current.active = true
         }
 
-        const updateMediaFrame = (width: number, height: number) => {
-            let frame = mediaFrameCanvasRef.current
-            if (!frame) {
-                frame = document.createElement("canvas")
-                mediaFrameCanvasRef.current = frame
-            }
-            if (frame.width !== Math.max(1, Math.round(width)) || frame.height !== Math.max(1, Math.round(height))) {
-                frame.width = Math.max(1, Math.round(width))
-                frame.height = Math.max(1, Math.round(height))
-            }
-            const frameCtx = frame.getContext("2d")
-            if (!frameCtx) return false
-            frameCtx.clearRect(0, 0, frame.width, frame.height)
-            if (!videoEl || videoEl.readyState < 2) return false
-            drawFittedMedia(frameCtx, videoEl, videoEl.videoWidth, videoEl.videoHeight, width, height)
-            return true
-        }
-
         const triggerInterferenceBurst = () => {
             burstUntilRef.current = motionTimeRef.current + 1.05
         }
@@ -1367,12 +1393,15 @@ export default function QuipPeekExport(props: { video?: string }) {
             const blendSpeed = 1 - Math.pow(1 - CONFIG.speed, dt * 60)
             const burst = getBurstAmount()
             const ambientChance = CONFIG.ambient * 0.9 + burst * 8.5
-            const mediaFrameReady = updateMediaFrame(width, height)
-            const mediaFrameCanvas = mediaFrameCanvasRef.current
 
             ctx.clearRect(0, 0, width, height)
             ctx.fillStyle = "${esc(state.bgColor)}"
             ctx.fillRect(0, 0, width, height)
+
+            const useFastBatch = !CONFIG.mixShapes
+            const frontMask = new Path2D()
+            const backMask = new Path2D()
+            const overlayTiles: Array<{ drawX: number; y: number; visibleWidth: number; tileHeight: number; flip: number; shape: number }> = []
 
             for (let row = 0; row < rows; row++) {
                 for (let col = 0; col < cols; col++) {
@@ -1435,26 +1464,49 @@ export default function QuipPeekExport(props: { video?: string }) {
                     const visibleWidth = tileWidth * scaleX
                     const drawX = x + (tileWidth - visibleWidth) * 0.5
                     const shape = getModuleShape(col, row, seedRef.current)
-                    const showVideo = eased >= 0.5 && mediaFrameReady && !!mediaFrameCanvas
+                    const showVideo = eased >= 0.5 && videoEl && videoEl.readyState >= 2
 
-                    if (showVideo) {
-                        const clipPath = new Path2D()
-                        addModulePath(clipPath, drawX, y, visibleWidth, tileHeight, shape)
-                        ctx.save()
-                        ctx.clip(clipPath)
-                        ctx.drawImage(mediaFrameCanvas!, 0, 0, width, height)
-                        ctx.restore()
+                    if (useFastBatch) {
+                        if (showVideo) addModulePath(frontMask, drawX, y, visibleWidth, tileHeight, shape)
+                        else addModulePath(backMask, drawX, y, visibleWidth, tileHeight, shape)
+                        overlayTiles.push({ drawX, y, visibleWidth, tileHeight, flip: tile.flip, shape })
                     } else {
                         const clipPath = new Path2D()
                         addModulePath(clipPath, drawX, y, visibleWidth, tileHeight, shape)
-                        ctx.save()
-                        ctx.clip(clipPath)
-                        ctx.fillStyle = "${esc(state.bgColor)}"
-                        ctx.fillRect(drawX, y, visibleWidth, tileHeight)
-                        ctx.restore()
+                        if (showVideo) {
+                            ctx.save()
+                            ctx.clip(clipPath)
+                            drawFittedMedia(ctx, videoEl!, videoEl!.videoWidth, videoEl!.videoHeight, width, height)
+                            ctx.restore()
+                        } else {
+                            ctx.save()
+                            ctx.clip(clipPath)
+                            ctx.fillStyle = "${esc(state.bgColor)}"
+                            ctx.fillRect(drawX, y, visibleWidth, tileHeight)
+                            ctx.restore()
+                        }
+                        drawTileOverlay(drawX, y, visibleWidth, tileHeight, tile.flip, shape)
                     }
+                }
+            }
 
-                    drawTileOverlay(drawX, y, visibleWidth, tileHeight, tile.flip, shape)
+            if (useFastBatch) {
+                if (videoEl && videoEl.readyState >= 2) {
+                    ctx.save()
+                    ctx.clip(frontMask)
+                    drawFittedMedia(ctx, videoEl, videoEl.videoWidth, videoEl.videoHeight, width, height)
+                    ctx.restore()
+                }
+
+                ctx.save()
+                ctx.clip(backMask)
+                ctx.fillStyle = "${esc(state.bgColor)}"
+                ctx.fillRect(0, 0, width, height)
+                ctx.restore()
+
+                for (let i = 0; i < overlayTiles.length; i++) {
+                    const o = overlayTiles[i]
+                    drawTileOverlay(o.drawX, o.y, o.visibleWidth, o.tileHeight, o.flip, o.shape)
                 }
             }
         }
