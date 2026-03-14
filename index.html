@@ -105,6 +105,62 @@
     background: var(--accent);
   }
 
+  .switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+
+  .switch-label {
+    font-size: 10px;
+    letter-spacing: 1.4px;
+    color: var(--dim);
+    text-transform: uppercase;
+  }
+
+  .toggle {
+    position: relative;
+    width: 36px;
+    height: 18px;
+  }
+
+  .toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: var(--line);
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    width: 12px;
+    height: 12px;
+    background: #8a8a8a;
+    border-radius: 50%;
+    transition: all 0.2s;
+  }
+
+  .toggle input:checked + .toggle-track {
+    background: var(--accent);
+  }
+
+  .toggle input:checked + .toggle-track::after {
+    left: 21px;
+    background: #000;
+  }
+
   .action-btn.primary {
     border-color: #6e6e6e;
   }
@@ -257,20 +313,27 @@
 
     <div class="section">
       <div class="section-label">Source</div>
-      <button class="upload-btn" id="uploadBtn">Load Image</button>
-      <input type="file" id="fileInput" accept="image/*">
+      <button class="upload-btn" id="uploadBtn">Load Video</button>
+      <input type="file" id="fileInput" accept="video/mp4,video/quicktime,video/webm,video/ogg">
     </div>
 
     <div class="section">
       <div class="section-label">Silhouette</div>
       <div class="mode-grid" id="modeGrid"></div>
+      <div class="switch-row">
+        <span class="switch-label">Mix Shapes</span>
+        <label class="toggle">
+          <input type="checkbox" id="mixShapes">
+          <span class="toggle-track"></span>
+        </label>
+      </div>
     </div>
 
     <div class="section">
       <div class="section-label">Generator Params</div>
       <div class="control">
-        <div class="control-head"><span>Rays</span><span id="radialRaysVal">6</span></div>
-        <input type="range" id="radialRays" min="3" max="24" step="1" value="6">
+        <div class="control-head"><span>Rays</span><span id="radialRaysVal">10</span></div>
+        <input type="range" id="radialRays" min="3" max="24" step="1" value="10">
       </div>
       <div id="params"></div>
     </div>
@@ -278,12 +341,12 @@
     <div class="section">
       <div class="section-label">Reveal</div>
       <div class="control">
-        <div class="control-head"><span>Tile Size</span><span id="tileSizeVal">22</span></div>
-        <input type="range" id="tileSize" min="10" max="56" step="2" value="22">
+        <div class="control-head"><span>Tile Size</span><span id="tileSizeVal">14</span></div>
+        <input type="range" id="tileSize" min="10" max="56" step="2" value="14">
       </div>
       <div class="control">
-        <div class="control-head"><span>Radius</span><span id="radiusVal">150</span></div>
-        <input type="range" id="radius" min="50" max="280" step="5" value="150">
+        <div class="control-head"><span>Radius</span><span id="radiusVal">185</span></div>
+        <input type="range" id="radius" min="50" max="280" step="5" value="185">
       </div>
       <div class="control">
         <div class="control-head"><span>Softness</span><span id="softnessVal">0.24</span></div>
@@ -298,16 +361,16 @@
     <div class="section">
       <div class="section-label">Pattern Motion</div>
       <div class="control">
-        <div class="control-head"><span>Scale</span><span id="patternScaleVal">1.00</span></div>
-        <input type="range" id="patternScale" min="0.4" max="2.4" step="0.05" value="1.00">
+        <div class="control-head"><span>Scale</span><span id="patternScaleVal">0.85</span></div>
+        <input type="range" id="patternScale" min="0.4" max="2.4" step="0.05" value="0.85">
       </div>
       <div class="control">
-        <div class="control-head"><span>Density</span><span id="densityVal">0.58</span></div>
-        <input type="range" id="density" min="0.2" max="0.9" step="0.01" value="0.58">
+        <div class="control-head"><span>Density</span><span id="densityVal">0.90</span></div>
+        <input type="range" id="density" min="0.2" max="0.9" step="0.01" value="0.90">
       </div>
       <div class="control">
-        <div class="control-head"><span>Pulse</span><span id="pulseVal">0.12</span></div>
-        <input type="range" id="pulse" min="0.00" max="0.35" step="0.01" value="0.12">
+        <div class="control-head"><span>Pulse</span><span id="pulseVal">0.20</span></div>
+        <input type="range" id="pulse" min="0.00" max="0.35" step="0.01" value="0.20">
       </div>
       <div class="control">
         <div class="control-head"><span>Rotate</span><span id="rotateVal">0.22</span></div>
@@ -346,7 +409,7 @@
       <canvas id="canvas"></canvas>
       <div id="emptyState">
         <strong>Pattern</strong>
-        <div>Load an image to begin</div>
+        <div>Load a video to begin</div>
       </div>
     </div>
   </main>
@@ -371,23 +434,24 @@ const MODE_PARAMS = [
 ];
 
 const state = {
-  mode: 0,
-  tileSize: 22,
-  radius: 150,
+  mode: 1,
+  tileSize: 14,
+  radius: 185,
   softness: 0.24,
   speed: 0.16,
   bgColor: '#f2f2ee',
-  patternScale: 1.0,
-  density: 0.58,
-  pulse: 0.12,
+  patternScale: 0.85,
+  density: 0.9,
+  pulse: 0.2,
   rotate: 0.22,
   ambient: 0.08,
-  radialRays: 6,
-  p1: 0.5,
-  p2: 0.5,
-  p3: 0.5,
-  p4: 0.5,
-  p5: 0.5,
+  radialRays: 10,
+  mixShapes: false,
+  p1: 0.34,
+  p2: 0.36,
+  p3: 0.71,
+  p4: 0.3,
+  p5: 0.41,
   cursorX: CANVAS_SIZE / 2,
   cursorY: CANVAS_SIZE / 2,
   pointerActive: false,
@@ -404,14 +468,16 @@ ctx.imageSmoothingEnabled = true;
 const fileInput = document.getElementById('fileInput');
 const emptyState = document.getElementById('emptyState');
 
-let imageBitmap = null;
-let fittedImage = null;
+let mediaVideo = null;
+let fittedMedia = null;
+let uploadedVideoUrl = '';
 let cols = 0;
 let rows = 0;
 let tiles = [];
 let lastTime = performance.now();
 let motionTime = 0;
 let noiseSeed = Math.random() * 9999;
+let burstUntil = 0;
 
 function resizeGrid() {
   cols = Math.ceil(CANVAS_SIZE / state.tileSize);
@@ -433,16 +499,23 @@ function resizeGrid() {
 
 function fitImageToCanvas(source) {
   if (!source) {
-    fittedImage = null;
+    fittedMedia = null;
     return;
   }
 
-  const scale = Math.max(CANVAS_SIZE / source.width, CANVAS_SIZE / source.height);
-  const drawWidth = source.width * scale;
-  const drawHeight = source.height * scale;
+  const sourceWidth = source.videoWidth || source.width;
+  const sourceHeight = source.videoHeight || source.height;
+  if (!sourceWidth || !sourceHeight) {
+    fittedMedia = null;
+    return;
+  }
+
+  const scale = Math.max(CANVAS_SIZE / sourceWidth, CANVAS_SIZE / sourceHeight);
+  const drawWidth = sourceWidth * scale;
+  const drawHeight = sourceHeight * scale;
   const dx = (CANVAS_SIZE - drawWidth) / 2;
   const dy = (CANVAS_SIZE - drawHeight) / 2;
-  fittedImage = { source, dx, dy, drawWidth, drawHeight };
+  fittedMedia = { source, dx, dy, drawWidth, drawHeight };
 }
 
 function lerp(a, b, t) {
@@ -524,20 +597,30 @@ function clearCursor() {
   state.pointerActive = false;
 }
 
+function triggerInterferenceBurst() {
+  burstUntil = motionTime + 1.05;
+}
+
+function getBurstAmount() {
+  const left = burstUntil - motionTime;
+  if (left <= 0) return 0;
+  return Math.max(0, Math.min(1, left / 1.05));
+}
+
 function foldAng(ang, rays) {
   const step = Math.PI / rays;
   const a = ((ang % (step * 2)) + step * 2) % (step * 2);
   return a < step ? a : step * 2 - a;
 }
 
-function getModePattern(normalized, angle, time) {
+function getPatternForMode(mode, normalized, angle, time) {
   const sc = state.patternScale;
   const density = state.density;
   const r = normalized;
   const rays = Math.max(3, state.radialRays);
   const folded = foldAng(angle, rays);
 
-  if (state.mode === 0) {
+  if (mode === 0) {
     const scale = (0.45 + state.p1 * 1.1) * sc;
     const thick = 0.04 + state.p2 * 0.22;
     const layers = 1 + Math.floor(state.p3 * 3);
@@ -554,7 +637,7 @@ function getModePattern(normalized, angle, time) {
     return best * (0.6 + (1 - normalized) * 0.4);
   }
 
-  if (state.mode === 1) {
+  if (mode === 1) {
     const freq1 = 0.7 + 2.8 * state.p1;
     const freq2 = 0.5 + 2.0 * state.p2;
     const amp1 = 0.25 + 1.5 * state.p3;
@@ -568,7 +651,7 @@ function getModePattern(normalized, angle, time) {
     return smoothstep(thresh * density * 0.6, 1, v);
   }
 
-  if (state.mode === 2) {
+  if (mode === 2) {
     const scale = (0.7 + state.p1 * 1.2) * sc;
     const twist = state.p2 * Math.PI * 2;
     const n1 = noiseP(r * 18 * scale + time * (0.1 + state.p3 * 0.9), folded * 7 * scale + time * 0.28);
@@ -577,7 +660,7 @@ function getModePattern(normalized, angle, time) {
     return smoothstep(density * 0.4, 1, (v + 1) * 0.5);
   }
 
-  if (state.mode === 3) {
+  if (mode === 3) {
     const radial1 = 6 + state.p1 * 18;
     const twist = 1 + state.p2 * 8;
     const rings = 2 + state.p3 * 10;
@@ -592,7 +675,7 @@ function getModePattern(normalized, angle, time) {
     return ringMask * (0.4 + petals * 0.6);
   }
 
-  if (state.mode === 4) {
+  if (mode === 4) {
     const scale = (0.8 + state.p1 * 1.1) * sc;
     const sharpness = state.p2;
     const px = r * 24 * scale;
@@ -618,6 +701,50 @@ function getModePattern(normalized, angle, time) {
   ) / 4;
   const v = Math.abs(Math.sin(p * Math.PI * bands));
   return smoothstep(dens * density * 0.45, 1, v);
+}
+
+function getModePattern(normalized, angle, time) {
+  return getPatternForMode(state.mode, normalized, angle, time);
+}
+
+function getModuleShape(col, row) {
+  if (!state.mixShapes) return 0;
+  const nv = noise2(col * 0.2 + noiseSeed * 0.0003 + 7.1, row * 0.2 + 19.4);
+  return Math.max(0, Math.min(3, Math.floor(nv * 4)));
+}
+
+function addModulePath(path, x, y, width, height, shape) {
+  const inset = Math.min(width, height) * 0.04;
+  const left = x + inset;
+  const top = y + inset;
+  const w = Math.max(0.001, width - inset * 2);
+  const h = Math.max(0.001, height - inset * 2);
+  const cx = left + w * 0.5;
+  const cy = top + h * 0.5;
+
+  if (shape === 1) {
+    path.moveTo(cx, top);
+    path.lineTo(left + w, cy);
+    path.lineTo(cx, top + h);
+    path.lineTo(left, cy);
+    path.closePath();
+    return;
+  }
+
+  if (shape === 2) {
+    path.arc(cx, cy, Math.min(w, h) * 0.5, 0, Math.PI * 2);
+    return;
+  }
+
+  if (shape === 3) {
+    const armW = w * 0.36;
+    const armH = h * 0.36;
+    path.rect(cx - armW * 0.5, top, armW, h);
+    path.rect(left, cy - armH * 0.5, w, armH);
+    return;
+  }
+
+  path.rect(left, top, w, h);
 }
 
 function getRevealStrength(dx, dy) {
@@ -658,17 +785,23 @@ function drawFieldAura() {
   ctx.fill();
 }
 
-function drawTileOverlay(x, y, size, intensity) {
-  const grd = ctx.createLinearGradient(x, y, x + size, y);
+function drawTileOverlay(x, y, width, height, intensity, shape) {
+  const grd = ctx.createLinearGradient(x, y, x + width, y);
   grd.addColorStop(0, `rgba(255,255,255,${0.24 * intensity})`);
   grd.addColorStop(1, `rgba(255,255,255,${0.07 * intensity})`);
+  const clipPath = new Path2D();
+  addModulePath(clipPath, x, y, width, height, shape);
+  ctx.save();
+  ctx.clip(clipPath);
   ctx.fillStyle = grd;
-  ctx.fillRect(x, y, size, size);
+  ctx.fillRect(x, y, width, height);
+  ctx.restore();
 }
 
 function updateTiles(dt) {
   const speed = 1 - Math.pow(1 - state.speed, dt * 60);
-  const ambientChance = state.ambient * 0.9;
+  const burst = getBurstAmount();
+  const ambientChance = state.ambient * 0.9 + burst * 8.5;
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const idx = row * cols + col;
@@ -681,6 +814,14 @@ function updateTiles(dt) {
       let target = 0;
       if (state.pointerActive) {
         target = getRevealStrength(centerX - state.cursorX, centerY - state.cursorY);
+      }
+
+      if (burst > 0) {
+        const coarse = noise2(col * 0.16 + motionTime * 1.7, row * 0.16 - motionTime * 1.5);
+        const fine = noise2(col * 0.63 - motionTime * 3.3 + 33.7, row * 0.63 + motionTime * 2.9 + 19.1);
+        const scan = 0.5 + 0.5 * Math.sin((col + row) * 0.55 + motionTime * 15);
+        const interference = Math.max(coarse * 0.55 + fine * 0.45, scan * 0.8);
+        target = Math.max(target, interference * (0.25 + burst * 0.75));
       }
 
       const drift = noise2(
@@ -720,27 +861,33 @@ function drawTiles() {
       const scaleX = Math.max(0.02, Math.abs(Math.cos(eased * Math.PI)));
       const visibleWidth = size * scaleX;
       const drawX = x + (size - visibleWidth) * 0.5;
-      const showingImage = eased >= 0.5 && fittedImage;
+      const shape = getModuleShape(col, row);
+      const showingMedia = eased >= 0.5 && fittedMedia && mediaVideo && mediaVideo.readyState >= 2;
 
-      if (showingImage) {
+      if (showingMedia) {
+        const clipPath = new Path2D();
+        addModulePath(clipPath, drawX, y, visibleWidth, size, shape);
         ctx.save();
-        ctx.beginPath();
-        ctx.rect(drawX, y, visibleWidth, size);
-        ctx.clip();
+        ctx.clip(clipPath);
         ctx.drawImage(
-          fittedImage.source,
-          fittedImage.dx,
-          fittedImage.dy,
-          fittedImage.drawWidth,
-          fittedImage.drawHeight
+          fittedMedia.source,
+          fittedMedia.dx,
+          fittedMedia.dy,
+          fittedMedia.drawWidth,
+          fittedMedia.drawHeight
         );
         ctx.restore();
       } else {
+        const clipPath = new Path2D();
+        addModulePath(clipPath, drawX, y, visibleWidth, size, shape);
+        ctx.save();
+        ctx.clip(clipPath);
         ctx.fillStyle = state.bgColor;
         ctx.fillRect(drawX, y, visibleWidth, size);
+        ctx.restore();
       }
 
-      drawTileOverlay(drawX, y, visibleWidth, tile.flip);
+      drawTileOverlay(drawX, y, visibleWidth, size, tile.flip, shape);
     }
   }
 }
@@ -755,7 +902,7 @@ function render(now) {
   drawFieldAura();
   updateTiles(dt);
 
-  if (imageBitmap) {
+  if (mediaVideo && mediaVideo.readyState >= 2) {
     drawTiles();
   }
 }
@@ -830,6 +977,7 @@ function getCurrentFramerCode() {
     density: state.density,
     pulse: state.pulse,
     rotate: state.rotate,
+    mixShapes: state.mixShapes,
     p1: state.p1,
     p2: state.p2,
     p3: state.p3,
@@ -904,14 +1052,14 @@ function foldAng(ang: number, rays: number) {
     return a < step ? a : step * 2 - a
 }
 
-function getModePattern(normalized: number, angle: number, time: number, seed: number) {
+function getPatternForMode(mode: number, normalized: number, angle: number, time: number, seed: number) {
     const sc = CONFIG.patternScale
     const density = CONFIG.density
     const r = normalized
     const rays = Math.max(3, CONFIG.radialRays)
     const folded = foldAng(angle, rays)
 
-    if (CONFIG.mode === 0) {
+    if (mode === 0) {
         const scale = (0.45 + CONFIG.p1 * 1.1) * sc
         const thick = 0.04 + CONFIG.p2 * 0.22
         const layers = 1 + Math.floor(CONFIG.p3 * 3)
@@ -929,7 +1077,7 @@ function getModePattern(normalized: number, angle: number, time: number, seed: n
         return best * (0.6 + (1 - normalized) * 0.4)
     }
 
-    if (CONFIG.mode === 1) {
+    if (mode === 1) {
         const freq1 = 0.7 + 2.8 * CONFIG.p1
         const freq2 = 0.5 + 2.0 * CONFIG.p2
         const amp1 = 0.25 + 1.5 * CONFIG.p3
@@ -943,7 +1091,7 @@ function getModePattern(normalized: number, angle: number, time: number, seed: n
         return smoothstep(thresh * density * 0.6, 1, v)
     }
 
-    if (CONFIG.mode === 2) {
+    if (mode === 2) {
         const scale = (0.7 + CONFIG.p1 * 1.2) * sc
         const twist = CONFIG.p2 * Math.PI * 2
         const n1 = noiseP(r * 18 * scale + time * (0.1 + CONFIG.p3 * 0.9), folded * 7 * scale + time * 0.28, seed)
@@ -952,7 +1100,7 @@ function getModePattern(normalized: number, angle: number, time: number, seed: n
         return smoothstep(density * 0.4, 1, (v + 1) * 0.5)
     }
 
-    if (CONFIG.mode === 3) {
+    if (mode === 3) {
         const radial1 = 6 + CONFIG.p1 * 18
         const twist = 1 + CONFIG.p2 * 8
         const rings = 2 + CONFIG.p3 * 10
@@ -967,7 +1115,7 @@ function getModePattern(normalized: number, angle: number, time: number, seed: n
         return ringMask * (0.4 + petals * 0.6)
     }
 
-    if (CONFIG.mode === 4) {
+    if (mode === 4) {
         const scale = (0.8 + CONFIG.p1 * 1.1) * sc
         const sharpness = CONFIG.p2
         const px = r * 24 * scale
@@ -993,6 +1141,50 @@ function getModePattern(normalized: number, angle: number, time: number, seed: n
     ) / 4
     const v = Math.abs(Math.sin(p * Math.PI * bands))
     return smoothstep(dens * density * 0.45, 1, v)
+}
+
+function getModePattern(normalized: number, angle: number, time: number, seed: number) {
+    return getPatternForMode(CONFIG.mode, normalized, angle, time, seed)
+}
+
+function getModuleShape(col: number, row: number, seed: number) {
+    if (!CONFIG.mixShapes) return 0
+    const nv = noise2(col * 0.2 + seed * 0.0003 + 7.1, row * 0.2 + 19.4, seed)
+    return clamp(Math.floor(nv * 4), 0, 3)
+}
+
+function addModulePath(path: Path2D, x: number, y: number, width: number, height: number, shape: number) {
+    const inset = Math.min(width, height) * 0.04
+    const left = x + inset
+    const top = y + inset
+    const w = Math.max(0.001, width - inset * 2)
+    const h = Math.max(0.001, height - inset * 2)
+    const cx = left + w * 0.5
+    const cy = top + h * 0.5
+
+    if (shape === 1) {
+        path.moveTo(cx, top)
+        path.lineTo(left + w, cy)
+        path.lineTo(cx, top + h)
+        path.lineTo(left, cy)
+        path.closePath()
+        return
+    }
+
+    if (shape === 2) {
+        path.arc(cx, cy, Math.min(w, h) * 0.5, 0, Math.PI * 2)
+        return
+    }
+
+    if (shape === 3) {
+        const armW = w * 0.36
+        const armH = h * 0.36
+        path.rect(cx - armW * 0.5, top, armW, h)
+        path.rect(left, cy - armH * 0.5, w, armH)
+        return
+    }
+
+    path.rect(left, top, w, h)
 }
 
 function useLoadedVideo(src?: string) {
@@ -1053,6 +1245,7 @@ export default function QuipPeekExport(props: { video?: string }) {
     const lastTimeRef = React.useRef<number>(0)
     const motionTimeRef = React.useRef<number>(0)
     const seedRef = React.useRef(1337)
+    const burstUntilRef = React.useRef(0)
     const pointerRef = React.useRef({ x: 0, y: 0, active: false })
     const tilesRef = React.useRef<Tile[]>([])
     const videoEl = useLoadedVideo(video)
@@ -1100,12 +1293,27 @@ export default function QuipPeekExport(props: { video?: string }) {
             pointerRef.current.active = true
         }
 
-        const drawTileOverlay = (x: number, y: number, width: number, height: number, intensity: number) => {
+        const triggerInterferenceBurst = () => {
+            burstUntilRef.current = motionTimeRef.current + 1.05
+        }
+
+        const getBurstAmount = () => {
+            const left = burstUntilRef.current - motionTimeRef.current
+            if (left <= 0) return 0
+            return clamp(left / 1.05, 0, 1)
+        }
+
+        const drawTileOverlay = (x: number, y: number, width: number, height: number, intensity: number, shape: number) => {
             const gradient = ctx.createLinearGradient(x, y, x + width, y)
             gradient.addColorStop(0, "rgba(255,255,255," + 0.24 * intensity + ")")
             gradient.addColorStop(1, "rgba(255,255,255," + 0.07 * intensity + ")")
+            const clipPath = new Path2D()
+            addModulePath(clipPath, x, y, width, height, shape)
+            ctx.save()
+            ctx.clip(clipPath)
             ctx.fillStyle = gradient
             ctx.fillRect(x, y, width, height)
+            ctx.restore()
         }
 
         const renderFrame = (now: number) => {
@@ -1124,6 +1332,8 @@ export default function QuipPeekExport(props: { video?: string }) {
             const radius = CONFIG.radius * (1 + CONFIG.pulse * Math.sin(motionTimeRef.current * 1.7))
             const rotation = motionTimeRef.current * CONFIG.rotate
             const blendSpeed = 1 - Math.pow(1 - CONFIG.speed, dt * 60)
+            const burst = getBurstAmount()
+            const ambientChance = CONFIG.ambient * 0.9 + burst * 8.5
 
             ctx.clearRect(0, 0, width, height)
             ctx.fillStyle = "${esc(state.bgColor)}"
@@ -1160,6 +1370,28 @@ export default function QuipPeekExport(props: { video?: string }) {
                         }
                     }
 
+                    if (burst > 0) {
+                        const coarse = noise2(col * 0.16 + motionTimeRef.current * 1.7, row * 0.16 - motionTimeRef.current * 1.5, seedRef.current)
+                        const fine = noise2(col * 0.63 - motionTimeRef.current * 3.3 + 33.7, row * 0.63 + motionTimeRef.current * 2.9 + 19.1, seedRef.current)
+                        const scan = 0.5 + 0.5 * Math.sin((col + row) * 0.55 + motionTimeRef.current * 15)
+                        const interference = Math.max(coarse * 0.55 + fine * 0.45, scan * 0.8)
+                        target = Math.max(target, interference * (0.25 + burst * 0.75))
+                    }
+
+                    const triggerBias = 0.35 + noise2(
+                        col * 0.21 + motionTimeRef.current * 0.18 + 17.3,
+                        row * 0.21 - motionTimeRef.current * 0.14 + 91.7,
+                        seedRef.current
+                    ) * 0.65
+                    const triggerRoll = noise2(
+                        col * 1.73 + motionTimeRef.current * 3.2 + 41.1,
+                        row * 1.73 - motionTimeRef.current * 2.7 + 12.8,
+                        seedRef.current
+                    )
+                    if (triggerRoll > 0.72 && Math.random() < ambientChance * triggerBias * dt) {
+                        target = Math.max(target, 0.55 + Math.random() * 0.45)
+                    }
+
                     tile.flip = lerp(tile.flip, target, blendSpeed)
                     if (tile.flip < 0.002) continue
 
@@ -1167,27 +1399,37 @@ export default function QuipPeekExport(props: { video?: string }) {
                     const scaleX = Math.max(0.02, Math.abs(Math.cos(eased * Math.PI)))
                     const visibleWidth = tileWidth * scaleX
                     const drawX = x + (tileWidth - visibleWidth) * 0.5
+                    const shape = getModuleShape(col, row, seedRef.current)
                     const showVideo = eased >= 0.5 && videoEl && videoEl.readyState >= 2
 
                     if (showVideo) {
+                        const clipPath = new Path2D()
+                        addModulePath(clipPath, drawX, y, visibleWidth, tileHeight, shape)
                         ctx.save()
-                        ctx.beginPath()
-                        ctx.rect(drawX, y, visibleWidth, tileHeight)
-                        ctx.clip()
+                        ctx.clip(clipPath)
                         drawFittedMedia(ctx, videoEl, videoEl.videoWidth, videoEl.videoHeight, width, height)
                         ctx.restore()
                     } else {
+                        const clipPath = new Path2D()
+                        addModulePath(clipPath, drawX, y, visibleWidth, tileHeight, shape)
+                        ctx.save()
+                        ctx.clip(clipPath)
                         ctx.fillStyle = "${esc(state.bgColor)}"
                         ctx.fillRect(drawX, y, visibleWidth, tileHeight)
+                        ctx.restore()
                     }
 
-                    drawTileOverlay(drawX, y, visibleWidth, tileHeight, tile.flip)
+                    drawTileOverlay(drawX, y, visibleWidth, tileHeight, tile.flip, shape)
                 }
             }
         }
 
         const onPointerMove = (event: PointerEvent) => updatePointer(event.clientX, event.clientY)
         const onPointerEnter = (event: PointerEvent) => updatePointer(event.clientX, event.clientY)
+        const onPointerDown = (event: PointerEvent) => {
+            updatePointer(event.clientX, event.clientY)
+            triggerInterferenceBurst()
+        }
         const onPointerLeave = () => {
             pointerRef.current.active = false
         }
@@ -1196,6 +1438,7 @@ export default function QuipPeekExport(props: { video?: string }) {
         observer.observe(element)
         element.addEventListener("pointermove", onPointerMove)
         element.addEventListener("pointerenter", onPointerEnter)
+        element.addEventListener("pointerdown", onPointerDown)
         element.addEventListener("pointerleave", onPointerLeave)
 
         resizeCanvas()
@@ -1206,6 +1449,7 @@ export default function QuipPeekExport(props: { video?: string }) {
             observer.disconnect()
             element.removeEventListener("pointermove", onPointerMove)
             element.removeEventListener("pointerenter", onPointerEnter)
+            element.removeEventListener("pointerdown", onPointerDown)
             element.removeEventListener("pointerleave", onPointerLeave)
         }
     }, [videoEl])
@@ -1285,28 +1529,82 @@ bgColor.addEventListener('input', () => {
   refreshFramerCode();
 });
 
+const mixShapes = document.getElementById('mixShapes');
+mixShapes.checked = state.mixShapes;
+mixShapes.addEventListener('change', () => {
+  state.mixShapes = mixShapes.checked;
+  refreshFramerCode();
+});
+
 document.getElementById('uploadBtn').addEventListener('click', () => fileInput.click());
 document.getElementById('copyFramerBtn').addEventListener('click', copyFramerComponent);
 
 fileInput.addEventListener('change', async (event) => {
   const file = event.target.files && event.target.files[0];
   if (!file) return;
-  imageBitmap = await createImageBitmap(file);
-  fitImageToCanvas(imageBitmap);
-  emptyState.style.display = 'none';
-  noiseSeed = Math.random() * 9999;
-  refreshFramerCode();
+  if (mediaVideo) {
+    mediaVideo.pause();
+    mediaVideo.removeAttribute('src');
+    mediaVideo.load();
+    mediaVideo = null;
+  }
+  if (uploadedVideoUrl) {
+    URL.revokeObjectURL(uploadedVideoUrl);
+    uploadedVideoUrl = '';
+  }
+
+  try {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.muted = true;
+    video.loop = true;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+    video.src = url;
+
+    await new Promise((resolve, reject) => {
+      const onLoaded = () => {
+        video.removeEventListener('loadeddata', onLoaded);
+        video.removeEventListener('error', onError);
+        resolve();
+      };
+      const onError = () => {
+        video.removeEventListener('loadeddata', onLoaded);
+        video.removeEventListener('error', onError);
+        reject(new Error('Video failed to load'));
+      };
+      video.addEventListener('loadeddata', onLoaded);
+      video.addEventListener('error', onError);
+      video.load();
+    });
+
+    await video.play().catch(() => {});
+    mediaVideo = video;
+    uploadedVideoUrl = url;
+    fitImageToCanvas(mediaVideo);
+    emptyState.style.display = 'none';
+    noiseSeed = Math.random() * 9999;
+    refreshFramerCode();
+  } catch (err) {
+    emptyState.style.display = '';
+  }
 });
 
 document.getElementById('centerBtn').addEventListener('click', () => {
   state.cursorX = CANVAS_SIZE / 2;
   state.cursorY = CANVAS_SIZE / 2;
   state.pointerActive = true;
+  triggerInterferenceBurst();
 });
 
 canvas.addEventListener('mousemove', updateCursor);
 canvas.addEventListener('mouseenter', updateCursor);
 canvas.addEventListener('mouseleave', clearCursor);
+canvas.addEventListener('pointerdown', event => {
+  updateCursor(event);
+  triggerInterferenceBurst();
+});
 canvas.addEventListener('touchstart', event => {
   const touch = event.touches[0];
   if (!touch) return;
